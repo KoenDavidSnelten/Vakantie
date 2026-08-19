@@ -17,6 +17,16 @@ Route::middleware('guest')->group(function () {
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
+    // Live-controle van de registratiecode (rate-limited tegen bruteforce).
+    Route::post('register/check-code', [RegisteredUserController::class, 'checkCode'])
+        ->middleware('throttle:10,1')
+        ->name('register.check-code');
+
+    // Live-controle of een e-mailadres geldig en nog vrij is.
+    Route::post('register/check-email', [RegisteredUserController::class, 'checkEmail'])
+        ->middleware('throttle:20,1')
+        ->name('register.check-email');
+
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 

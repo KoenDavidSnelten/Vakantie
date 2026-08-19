@@ -15,7 +15,7 @@
 <div>
     <x-input-label for="{{ $prefix }}_image_url" value="Foto URL (optioneel)" />
     <x-text-input id="{{ $prefix }}_image_url" name="image_url" type="url" class="mt-1 block w-full" :value="old('image_url')" placeholder="https://... (we proberen 'm anders automatisch op te halen)" />
-    <p class="mt-1 text-xs text-slate-400">Sommige sites (zoals Booking.com) blokkeren automatisch ophalen — plak dan hier zelf een link naar een foto.</p>
+    <p class="mt-1 text-xs text-slate-400">Sommige sites (zoals Booking.com) blokkeren automatisch ophalen, plak dan hier zelf een link naar een foto.</p>
 </div>
 
 <div>

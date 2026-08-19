@@ -25,6 +25,14 @@ Route::get('/games', function () {
     return view('games.index');
 })->middleware(['auth', 'verified'])->name('games.index');
 
+Route::get('/games/boom-it', function () {
+    return view('games.boom-it');
+})->middleware(['auth', 'verified'])->name('games.boom-it');
+
+Route::get('/games/picolo', function () {
+    return view('games.picolo');
+})->middleware(['auth', 'verified'])->name('games.picolo');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/vacations', [VacationController::class, 'index'])->name('vacations.index');
     Route::get('/vacations/create', [VacationController::class, 'create'])->name('vacations.create');

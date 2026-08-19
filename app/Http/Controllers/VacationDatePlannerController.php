@@ -94,7 +94,7 @@ class VacationDatePlannerController extends Controller
         ]);
 
         // Choosing the final date ends the plan phase: availability voting
-        // locks, and hotel booking becomes available. Only bumps forward —
+        // locks, and hotel booking becomes available. Only bumps forward
         // re-picking the date later (e.g. from Booking) won't move it back.
         if ($vacation->phase === VacationPhase::Planning) {
             $validated['phase'] = VacationPhase::Booking;

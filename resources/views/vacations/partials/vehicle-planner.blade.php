@@ -37,7 +37,7 @@
                         </div>
 
                         <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                            <span>{{ $vehicle->has_winter_tires ? '❄️ Winterbanden' : '— Geen winterbanden' }}</span>
+                            <span>{{ $vehicle->has_winter_tires ? '❄️ Winterbanden' : 'Geen winterbanden' }}</span>
                             @if ($vehicle->has_large_trunk)
                                 <span>🧳 Grote kofferbak</span>
                             @endif

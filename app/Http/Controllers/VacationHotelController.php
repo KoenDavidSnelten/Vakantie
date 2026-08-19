@@ -118,7 +118,7 @@ class VacationHotelController extends Controller
 
     /**
      * A manually supplied photo always wins. Otherwise, only re-scrape when the
-     * link actually changed (or nothing was found before) — no point re-fetching
+     * link actually changed (or nothing was found before), no point re-fetching
      * on every edit.
      */
     private function resolveImageUrlForUpdate(VacationHotel $hotel, ?string $manualImage, ?string $url): ?string
@@ -141,7 +141,7 @@ class VacationHotelController extends Controller
     /**
      * Best-effort scrape of the page's Open Graph image, so a photo shows up
      * automatically for an Airbnb/hotel link. Returns null on any failure
-     * (blocked, no og:image, unreachable, unsafe host) — this is a nice-to-have,
+     * (blocked, no og:image, unreachable, unsafe host), this is a nice-to-have,
      * never something the request should fail over. Some sites (e.g.
      * Booking.com) sit behind a bot-challenge and will never yield a result
      * this way; the "Foto URL" field lets people paste one in manually instead.

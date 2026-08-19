@@ -85,7 +85,7 @@ return new class extends Migration
      * The old flat "location" model conflated a ski area (ski pass price, map,
      * distance, bus) with a specific hotel. Existing rows get grouped into one
      * ski area per vacation, named after the first location, since in practice
-     * they referred to the same resort — hotel ids are kept identical to the
+     * they referred to the same resort, hotel ids are kept identical to the
      * original location ids so votes/comments carry over untouched.
      */
     private function migrateExistingLocationsIntoSkiAreasAndHotels(): void

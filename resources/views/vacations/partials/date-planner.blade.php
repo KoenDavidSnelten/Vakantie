@@ -92,7 +92,7 @@
         @if ($isParticipant && $isFinalized)
             <div class="mt-6">
                 <h4 class="text-sm font-semibold text-slate-900">Jouw beschikbaarheid</h4>
-                <p class="mt-2 text-sm text-slate-500">🔒 De datum is definitief gekozen — beschikbaarheid kan niet meer aangepast worden.</p>
+                <p class="mt-2 text-sm text-slate-500">🔒 De datum is definitief gekozen, beschikbaarheid kan niet meer aangepast worden.</p>
             </div>
         @elseif ($isParticipant)
             <div class="mt-6">

@@ -48,7 +48,7 @@
     </div>
     @if (($skiArea->ski_area_map_url ?? null))
         <p class="mt-1.5 text-xs text-slate-500">
-            Huidige kaart: <a href="{{ $skiArea->ski_area_map_url }}" target="_blank" rel="noopener noreferrer" class="text-sky-700 hover:underline">bekijken</a> — upload of plak een nieuwe link om te vervangen.
+            Huidige kaart: <a href="{{ $skiArea->ski_area_map_url }}" target="_blank" rel="noopener noreferrer" class="text-sky-700 hover:underline">bekijken</a>, upload of plak een nieuwe link om te vervangen.
         </p>
     @endif
     <x-input-error class="mt-2" :messages="$errors->get('ski_area_map')" />

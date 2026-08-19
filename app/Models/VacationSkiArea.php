@@ -77,7 +77,7 @@ class VacationSkiArea extends Model
     }
 
     /**
-     * The 5-day ski pass price spread over one night — used to fold into a
+     * The 5-day ski pass price spread over one night, used to fold into a
      * hotel's total price per night.
      */
     public function pricePerNightSkiPass(): ?float

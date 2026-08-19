@@ -21,6 +21,21 @@ enum VacationPhase: string
         };
     }
 
+    /**
+     * A short explanation of what happens during this phase and what you can
+     * do in it. Shown in the info popover next to the phase stepper.
+     */
+    public function description(): string
+    {
+        return match ($this) {
+            self::Planning => 'De reis krijgt vorm. Prik samen een datum in de datumplanner en stem in de locatieplanner op skigebieden en hotels.',
+            self::Booking => 'Datum en locatie staan vast. Nu worden de hotels geboekt, de prijzen per persoon kloppen pas als het aantal deelnemers bekend is.',
+            self::TravelPlanning => 'Regel het vervoer in de reisplanner: voeg voertuigen en reisopties toe en verdeel wie met wie meerijdt.',
+            self::OnVacation => 'Het is zover! De planners zijn afgesloten; gebruik de paklijst zodat niemand iets vergeet.',
+            self::Finished => 'De vakantie zit erop. Je kunt alles nog als naslag terugkijken.',
+        };
+    }
+
     public function badgeClasses(): string
     {
         return match ($this) {

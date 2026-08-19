@@ -35,7 +35,7 @@
             <span class="text-sm text-slate-500"><span x-text="checked.length"></span> / {{ $totalItems }} ingepakt</span>
         @endif
     </div>
-    <p class="mt-1 text-sm text-slate-500">Vink af wat jij hebt ingepakt — iedereen houdt zijn eigen voortgang bij.</p>
+    <p class="mt-1 text-sm text-slate-500">Vink af wat jij hebt ingepakt, iedereen houdt zijn eigen voortgang bij.</p>
 
     <div class="mt-6 space-y-6">
         @foreach (PackingCategory::cases() as $category)

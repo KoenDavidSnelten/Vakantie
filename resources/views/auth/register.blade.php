@@ -39,6 +39,20 @@
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
+        @if ($registrationCodeRequired ?? false)
+            <!-- Registratiecode (anti-spam) -->
+            <div class="mt-4">
+                <x-input-label for="registration_code" :value="__('Registratiecode')" />
+
+                <x-text-input id="registration_code" class="block mt-1 w-full"
+                                type="password"
+                                name="registration_code" required autocomplete="off" />
+
+                <p class="mt-1 text-xs text-slate-500">{{ __('Vraag deze code aan de beheerder.') }}</p>
+                <x-input-error :messages="$errors->get('registration_code')" class="mt-2" />
+            </div>
+        @endif
+
         <div class="flex items-center justify-end mt-4">
             <a class="underline text-sm text-slate-600 hover:text-slate-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500" href="{{ route('login') }}">
                 {{ __('Already registered?') }}

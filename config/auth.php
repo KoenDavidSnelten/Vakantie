@@ -15,6 +15,18 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Registratiecode (anti-spam)
+    |--------------------------------------------------------------------------
+    |
+    | Een gedeelde code die je met vrienden deelt. Is deze ingesteld, dan moet
+    | die bij registratie ingevuld worden. Leeg laten = geen code nodig.
+    |
+    */
+
+    'registration_code' => env('REGISTRATION_CODE'),
+
     'defaults' => [
         'guard' => env('AUTH_GUARD', 'web'),
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),

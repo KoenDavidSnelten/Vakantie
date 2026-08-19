@@ -20,7 +20,9 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        return view('auth.register');
+        return view('auth.register', [
+            'registrationCodeRequired' => filled(config('auth.registration_code')),
+        ]);
     }
 
     /**
@@ -30,11 +32,26 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        ];
+
+        $expectedCode = config('auth.registration_code');
+        if (filled($expectedCode)) {
+            $rules['registration_code'] = ['required', 'string'];
+        }
+
+        $request->validate($rules);
+
+        // Timing-veilige controle van de gedeelde registratiecode (anti-spam).
+        if (filled($expectedCode)
+            && ! hash_equals((string) $expectedCode, (string) $request->input('registration_code'))) {
+            throw ValidationException::withMessages([
+                'registration_code' => __('De registratiecode klopt niet.'),
+            ]);
+        }
 
         $user = User::create([
             'name' => $request->name,

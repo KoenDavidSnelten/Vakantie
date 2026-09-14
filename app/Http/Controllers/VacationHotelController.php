@@ -158,6 +158,21 @@ class VacationHotelController extends Controller
         try {
             $response = Http::timeout(5)
                 ->withUserAgent('Mozilla/5.0 (compatible; VakantiePlanner/1.0)')
+                ->withOptions([
+                    // Het adres zelf is hierboven al gecontroleerd, maar een
+                    // publieke pagina mag doorsturen naar waar hij wil. Zonder
+                    // deze controle is een omleiding naar http://192.168.1.1
+                    // genoeg om alsnog in het thuisnetwerk te kijken.
+                    'allow_redirects' => [
+                        'max' => 3,
+                        'protocols' => ['http', 'https'],
+                        'on_redirect' => function ($request, $response, $uri) {
+                            if (! $this->isSafeToFetch((string) $uri)) {
+                                throw new \RuntimeException('Omleiding naar een onveilig adres.');
+                            }
+                        },
+                    ],
+                ])
                 ->get($url);
         } catch (\Throwable) {
             return null;

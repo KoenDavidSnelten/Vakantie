@@ -24,7 +24,10 @@ FROM composer:2 AS vendor
 WORKDIR /app
 
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
+# Geen --prefer-dist: dist is toch al de standaard, maar de vlag expliciet
+# meegeven zet de terugval op git-source uit. Precies die terugval wil je
+# als GitHub even een 504 teruggeeft.
+RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction
 
 COPY . .
 RUN composer dump-autoload --optimize --no-dev --no-interaction

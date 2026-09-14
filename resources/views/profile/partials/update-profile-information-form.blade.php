@@ -13,37 +13,15 @@
         @csrf
     </form>
 
-    <form method="post" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-6 space-y-6" x-data="{ preview: null }">
+    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
         @csrf
         @method('patch')
 
-        <div>
-            <x-input-label for="avatar" :value="__('Profile picture')" />
-
-            <div class="mt-2 flex items-center gap-4">
-                <template x-if="preview">
-                    <img :src="preview" class="h-16 w-16 rounded-full object-cover">
-                </template>
-                <template x-if="!preview">
-                    @if ($user->avatar_url)
-                        <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="h-16 w-16 rounded-full object-cover">
-                    @else
-                        <div class="h-16 w-16 rounded-full bg-sky-100 flex items-center justify-center text-sky-700 text-xl font-semibold">
-                            {{ Str::of($user->name)->substr(0, 1)->upper() }}
-                        </div>
-                    @endif
-                </template>
-
-                <input
-                    id="avatar"
-                    name="avatar"
-                    type="file"
-                    accept="image/*"
-                    class="block w-full text-sm text-slate-600 file:me-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
-                    @change="preview = $event.target.files.length ? URL.createObjectURL($event.target.files[0]) : null"
-                >
-            </div>
-            <x-input-error class="mt-2" :messages="$errors->get('avatar')" />
+        <div class="flex items-center gap-4">
+            <x-user-avatar :user="$user" size="lg" />
+            <p class="text-sm text-slate-600">
+                {{ __('Your avatar is made from your initials and never changes colour.') }}
+            </p>
         </div>
 
         <div>
@@ -77,17 +55,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
-
-            @if (session('status') === 'profile-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-slate-600"
-                >{{ __('Saved.') }}</p>
-            @endif
+            <x-primary-button data-busy-label="Opslaan&hellip;">{{ __('Save') }}</x-primary-button>
         </div>
     </form>
 </section>

@@ -1,7 +1,7 @@
-<x-app-layout>
+<x-app-layout :title="'Paklijst · '.$vacation->name">
     <x-slot name="header">
         <div class="space-y-3">
-            <a href="{{ route('vacations.show', $vacation) }}" class="text-sm text-slate-500 hover:text-slate-700">
+            <a href="{{ route('vacations.show', $vacation) }}" class="inline-block rounded text-sm text-slate-600 transition hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500">
                 &larr; {{ $vacation->name }}
             </a>
 
@@ -18,7 +18,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
             @include('vacations.partials.packing-list')
         </div>
     </div>

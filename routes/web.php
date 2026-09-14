@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\VacationController;
 use App\Http\Controllers\VacationDatePlannerController;
@@ -11,15 +12,15 @@ use App\Http\Controllers\VacationSkiAreaController;
 use App\Http\Controllers\VacationTravelOptionController;
 use App\Http\Controllers\VacationTravelPlannerController;
 use App\Http\Controllers\VacationVehicleController;
+use App\Http\Controllers\VacationVehiclePassengerController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', WelcomeController::class);
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', DashboardController::class)
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::get('/games', function () {
     return view('games.index');
@@ -66,6 +67,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/vacations/{vacation}/vehicles', [VacationVehicleController::class, 'store'])->name('vacations.vehicles.store');
     Route::patch('/vacations/{vacation}/vehicles/{vehicle}', [VacationVehicleController::class, 'update'])->name('vacations.vehicles.update');
     Route::delete('/vacations/{vacation}/vehicles/{vehicle}', [VacationVehicleController::class, 'destroy'])->name('vacations.vehicles.destroy');
+
+    Route::post('/vacations/{vacation}/vehicles/{vehicle}/passengers', [VacationVehiclePassengerController::class, 'store'])->name('vacations.vehicles.passengers.store');
+    Route::delete('/vacations/{vacation}/vehicles/{vehicle}/passengers/{passenger}', [VacationVehiclePassengerController::class, 'destroy'])->name('vacations.vehicles.passengers.destroy');
 
     Route::post('/vacations/{vacation}/travel-options', [VacationTravelOptionController::class, 'store'])->name('vacations.travel-options.store');
     Route::patch('/vacations/{vacation}/travel-options/{travelOption}', [VacationTravelOptionController::class, 'update'])->name('vacations.travel-options.update');

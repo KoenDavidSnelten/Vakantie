@@ -2,11 +2,15 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
+    // De voorpagina toont de eerstvolgende en de afgeronde reizen, dus die heeft
+    // een database nodig.
+    use RefreshDatabase;
+
     /**
      * A basic test example.
      */

@@ -16,9 +16,10 @@ class VacationController extends Controller
     {
         $user = $request->user();
 
-        $vacations = $user->isAdmin()
-            ? Vacation::latest()->get()
-            : $user->vacations()->latest()->get();
+        $vacations = ($user->isAdmin() ? Vacation::query() : $user->vacations())
+            ->with('users')
+            ->latest()
+            ->get();
 
         return view('vacations.index', [
             'vacations' => $vacations,
@@ -55,6 +56,8 @@ class VacationController extends Controller
 
         abort_unless($user->isAdmin() || $vacation->users->contains('id', $user->id), 403);
 
+        $vacation->load('users');
+
         return view('vacations.show', [
             'vacation' => $vacation,
         ]);
@@ -63,6 +66,8 @@ class VacationController extends Controller
     public function edit(Request $request, Vacation $vacation): View
     {
         abort_unless($request->user()->isAdmin(), 403);
+
+        $vacation->load('users');
 
         return view('vacations.edit', [
             'vacation' => $vacation,

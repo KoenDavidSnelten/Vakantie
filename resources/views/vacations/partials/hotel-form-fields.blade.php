@@ -1,21 +1,31 @@
 @php
     $hotel = $hotel ?? null;
+
+    // Elk formulier op deze pagina heeft zijn eigen foutenzak. Zonder dat zou een
+    // mislukte poging bij één hotel de melding onder álle hotelformulieren zetten,
+    // en zou old() overal de verkeerde waarden invullen.
+    $bagErrors = $errors->getBag($bag);
+    $failed = $bagErrors->any();
+    $value = fn (string $key, $fallback = '') => $failed ? old($key, $fallback) : $fallback;
 @endphp
 
 <div>
     <x-input-label for="{{ $prefix }}_name" value="Naam hotel/accommodatie" />
-    <x-text-input id="{{ $prefix }}_name" name="name" class="mt-1 block w-full" :value="old('name', $hotel->name ?? '')" required />
+    <x-text-input id="{{ $prefix }}_name" name="name" class="mt-1 block w-full" :value="$value('name', $hotel->name ?? '')" required />
+    <x-input-error class="mt-2" :messages="$bagErrors->get('name')" />
 </div>
 
 <div>
     <x-input-label for="{{ $prefix }}_url" value="Link (Airbnb, Booking.com, hotelsite)" />
-    <x-text-input id="{{ $prefix }}_url" name="url" type="url" class="mt-1 block w-full" :value="old('url', $hotel->url ?? '')" placeholder="https://..." />
+    <x-text-input id="{{ $prefix }}_url" name="url" type="url" class="mt-1 block w-full" :value="$value('url', $hotel->url ?? '')" placeholder="https://..." />
+    <x-input-error class="mt-2" :messages="$bagErrors->get('url')" />
 </div>
 
 <div>
     <x-input-label for="{{ $prefix }}_image_url" value="Foto URL (optioneel)" />
-    <x-text-input id="{{ $prefix }}_image_url" name="image_url" type="url" class="mt-1 block w-full" :value="old('image_url')" placeholder="https://... (we proberen 'm anders automatisch op te halen)" />
-    <p class="mt-1 text-xs text-slate-400">Sommige sites (zoals Booking.com) blokkeren automatisch ophalen, plak dan hier zelf een link naar een foto.</p>
+    <x-text-input id="{{ $prefix }}_image_url" name="image_url" type="url" class="mt-1 block w-full" :value="$value('image_url')" placeholder="https://... (we proberen 'm anders automatisch op te halen)" />
+    <p class="mt-1 text-xs text-slate-600">Sommige sites (zoals Booking.com) blokkeren automatisch ophalen, plak dan hier zelf een link naar een foto.</p>
+    <x-input-error class="mt-2" :messages="$bagErrors->get('image_url')" />
 </div>
 
 <div>
@@ -31,9 +41,10 @@
         </label>
     </div>
     <div class="relative mt-2">
-        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-slate-400">€</span>
-        <x-text-input id="{{ $prefix }}_price_accommodation_per_night" name="price_accommodation_per_night" type="number" step="0.01" min="0" class="block w-full pl-7" :value="old('price_accommodation_per_night', $hotel->price_accommodation_per_night ?? '')" />
+        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-slate-600">€</span>
+        <x-text-input id="{{ $prefix }}_price_accommodation_per_night" name="price_accommodation_per_night" type="number" step="0.01" min="0" class="block w-full pl-7" :value="$value('price_accommodation_per_night', $hotel->price_accommodation_per_night ?? '')" />
     </div>
+    <x-input-error class="mt-2" :messages="$bagErrors->get('price_accommodation_per_night')" />
 </div>
 
 <div>
@@ -44,11 +55,6 @@
         rows="2"
         class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 text-sm"
         placeholder="Bijv. 2 kamers: 1x 2-persoonskamer, 1x 4-persoonskamer met stapelbedden"
-    >{{ old('room_layout', $hotel->room_layout ?? '') }}</textarea>
+    >{{ $value('room_layout', $hotel->room_layout ?? '') }}</textarea>
+    <x-input-error class="mt-2" :messages="$bagErrors->get('room_layout')" />
 </div>
-
-<x-input-error class="mt-2" :messages="$errors->get('name')" />
-<x-input-error class="mt-2" :messages="$errors->get('url')" />
-<x-input-error class="mt-2" :messages="$errors->get('image_url')" />
-<x-input-error class="mt-2" :messages="$errors->get('price_accommodation_per_night')" />
-<x-input-error class="mt-2" :messages="$errors->get('room_layout')" />

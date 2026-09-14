@@ -7,13 +7,15 @@
     ];
 @endphp
 
-<div class="flex flex-wrap gap-2">
+<nav class="flex flex-wrap gap-2" aria-label="Planners">
     @foreach ($plannerNavItems as $item)
+        @php $isCurrent = request()->routeIs($item['route']); @endphp
         <a
             href="{{ route($item['route'], $vacation) }}"
-            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition {{ request()->routeIs($item['route']) ? 'bg-sky-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50' }}"
+            @if ($isCurrent) aria-current="page" @endif
+            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 {{ $isCurrent ? 'bg-sky-600 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50' }}"
         >
-            <span>{{ $item['icon'] }}</span> {{ $item['label'] }}
+            <span aria-hidden="true">{{ $item['icon'] }}</span> {{ $item['label'] }}
         </a>
     @endforeach
-</div>
+</nav>

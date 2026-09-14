@@ -32,17 +32,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
-
-            @if (session('status') === 'password-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-slate-600"
-                >{{ __('Saved.') }}</p>
-            @endif
+            <x-primary-button data-busy-label="Opslaan&hellip;">{{ __('Save') }}</x-primary-button>
         </div>
     </form>
 </section>

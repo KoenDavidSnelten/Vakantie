@@ -19,7 +19,7 @@ class VacationHotelCommentController extends Controller
         abort_unless($hotel->vacation_ski_area_id === $skiArea->id, 404);
         abort_unless($user->isAdmin() || $vacation->users->contains('id', $user->id), 403);
 
-        $validated = $request->validate([
+        $validated = $request->validateWithBag('hotelComment'.$hotel->id, [
             'body' => ['required', 'string', 'max:2000'],
         ]);
 

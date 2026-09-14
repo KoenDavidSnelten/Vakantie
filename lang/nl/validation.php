@@ -1,0 +1,116 @@
+<?php
+
+/**
+ * Alleen de regels die deze app daadwerkelijk gebruikt, in het Nederlands.
+ * Ontbreekt er een regel, dan valt Laravel terug op het Engels (fallback_locale).
+ */
+return [
+    'accepted' => ':attribute moet geaccepteerd worden.',
+    'after' => ':attribute moet een datum na :date zijn.',
+    'after_or_equal' => ':attribute mag niet vóór :date liggen.',
+    'array' => ':attribute moet een lijst zijn.',
+    'before' => ':attribute moet een datum vóór :date zijn.',
+    'before_or_equal' => ':attribute mag niet na :date liggen.',
+    'boolean' => ':attribute moet ja of nee zijn.',
+    'confirmed' => 'De bevestiging van :attribute komt niet overeen.',
+    'current_password' => 'Het wachtwoord klopt niet.',
+    'date' => ':attribute is geen geldige datum.',
+    'declined' => ':attribute moet geweigerd worden.',
+    'different' => ':attribute en :other moeten verschillen.',
+    'email' => ':attribute moet een geldig e-mailadres zijn.',
+    'enum' => 'De gekozen :attribute is ongeldig.',
+    'exists' => 'De gekozen :attribute bestaat niet.',
+    'file' => ':attribute moet een bestand zijn.',
+    'filled' => ':attribute mag niet leeg zijn.',
+    'image' => ':attribute moet een afbeelding zijn.',
+    'in' => 'De gekozen :attribute is ongeldig.',
+    'integer' => ':attribute moet een heel getal zijn.',
+    'lowercase' => ':attribute mag alleen kleine letters bevatten.',
+    'max' => [
+        'array' => ':attribute mag niet meer dan :max items bevatten.',
+        'file' => ':attribute mag niet groter zijn dan :max kB.',
+        'numeric' => ':attribute mag niet hoger zijn dan :max.',
+        'string' => ':attribute mag niet langer zijn dan :max tekens.',
+    ],
+    'mimes' => ':attribute moet een bestand zijn van het type :values.',
+    'min' => [
+        'array' => ':attribute moet minstens :min items bevatten.',
+        'file' => ':attribute moet minstens :min kB groot zijn.',
+        'numeric' => ':attribute moet minstens :min zijn.',
+        'string' => ':attribute moet minstens :min tekens bevatten.',
+    ],
+    'not_regex' => 'De opmaak van :attribute is ongeldig.',
+    'numeric' => ':attribute moet een getal zijn.',
+    'present' => ':attribute moet aanwezig zijn.',
+    'regex' => 'De opmaak van :attribute is ongeldig.',
+    'required' => ':attribute is verplicht.',
+    'required_if' => ':attribute is verplicht als :other :value is.',
+    'required_with' => ':attribute is verplicht in combinatie met :values.',
+    'same' => ':attribute en :other moeten overeenkomen.',
+    'size' => [
+        'array' => ':attribute moet :size items bevatten.',
+        'file' => ':attribute moet :size kB groot zijn.',
+        'numeric' => ':attribute moet :size zijn.',
+        'string' => ':attribute moet :size tekens bevatten.',
+    ],
+    'string' => ':attribute moet tekst zijn.',
+    'unique' => ':attribute is al in gebruik.',
+    'uploaded' => ':attribute kon niet geüpload worden.',
+    'uppercase' => ':attribute mag alleen hoofdletters bevatten.',
+    'url' => ':attribute moet een geldige link zijn (begin met https://).',
+
+    'password' => [
+        'letters' => ':attribute moet minstens één letter bevatten.',
+        'mixed' => ':attribute moet minstens één hoofdletter en één kleine letter bevatten.',
+        'numbers' => ':attribute moet minstens één cijfer bevatten.',
+        'symbols' => ':attribute moet minstens één symbool bevatten.',
+        'uncompromised' => 'Dit wachtwoord komt voor in een datalek. Kies een ander wachtwoord.',
+    ],
+
+    'custom' => [
+        'registration_code' => [
+            'required' => 'Vul de registratiecode in.',
+        ],
+        'dates.*' => [
+            'in' => 'Er is een ongeldige beschikbaarheid meegestuurd.',
+        ],
+    ],
+
+    /**
+     * Veldnamen zoals ze in de meldingen terugkomen.
+     */
+    'attributes' => [
+        'car_model' => 'Automerk en -model',
+        'category' => 'Categorie',
+        'current_password' => 'Huidig wachtwoord',
+        'description' => 'Informatie',
+        'distance_to_slopes_km' => 'Afstand tot piste/lift',
+        'email' => 'E-mailadres',
+        'final_end_date' => 'Einddatum',
+        'final_start_date' => 'Startdatum',
+        'image_url' => 'Foto-URL',
+        'name' => 'Naam',
+        'notes' => 'Notities',
+        'password' => 'Wachtwoord',
+        'password_confirmation' => 'Wachtwoordbevestiging',
+        'phase' => 'Fase',
+        'planning_end_date' => 'Einddatum van het bereik',
+        'planning_start_date' => 'Startdatum van het bereik',
+        'price_accommodation_per_night' => 'Prijs overnachting',
+        'price_accommodation_unit' => 'Prijseenheid',
+        'price_per_day' => 'Prijs per dag',
+        'price_per_person' => 'Prijs per persoon',
+        'price_ski_pass' => 'Prijs skipas',
+        'registration_code' => 'Registratiecode',
+        'room_layout' => 'Kamerindeling',
+        'seats' => 'Zitplaatsen',
+        'ski_area_map_url' => 'Link naar pistekaart',
+        'type' => 'Soort',
+        'url' => 'Link',
+        'user_id' => 'Deelnemer',
+        'vacation_ski_area_id' => 'Bestemming',
+        'user_ids' => 'Deelnemers',
+        'value' => 'Stem',
+        'vehicle_id' => 'Auto',
+    ],
+];

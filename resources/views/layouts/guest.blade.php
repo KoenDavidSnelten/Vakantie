@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Vakantie') }}</title>
+        <title>{{ $attributes->get('title') ? $attributes->get('title').' · '.config('app.name', 'Vakantie') : config('app.name', 'Vakantie') }}</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -17,7 +17,7 @@
     <body class="antialiased text-slate-800">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-slate-50">
             <div>
-                <a href="/" class="flex items-center gap-2 text-slate-900">
+                <a href="/" class="flex items-center gap-2 text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
                     <x-application-logo class="w-10 h-10 text-sky-600" />
                     <span class="text-xl font-bold tracking-tight">{{ config('app.name', 'Vakantie') }}</span>
                 </a>

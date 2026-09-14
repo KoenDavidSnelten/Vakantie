@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="Nieuwe vakantie">
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-slate-900 leading-tight">
             {{ __('Nieuwe vakantie') }}

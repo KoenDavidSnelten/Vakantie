@@ -14,6 +14,11 @@ use Illuminate\View\View;
 
 class VacationDatePlannerController extends Controller
 {
+    /**
+     * Sentinelwaarde uit het formulier waarmee een dag weer leeg wordt gemaakt.
+     */
+    public const CLEAR_STATUS = 'clear';
+
     public function show(Request $request, Vacation $vacation): View|RedirectResponse
     {
         $user = $request->user();
@@ -61,13 +66,25 @@ class VacationDatePlannerController extends Controller
 
         abort_if(empty($validDates), 404);
 
+        // 'clear' is geen echte status maar de weg terug: daarmee haal je een
+        // per ongeluk ingevulde dag weer helemaal leeg.
+        $allowed = array_merge(array_column(AvailabilityStatus::cases(), 'value'), [self::CLEAR_STATUS]);
+
         $validated = $request->validate([
             'dates' => ['required', 'array'],
-            'dates.*' => ['required', Rule::in(array_column(AvailabilityStatus::cases(), 'value'))],
+            'dates.*' => ['required', Rule::in($allowed)],
         ]);
+
+        $toClear = [];
 
         foreach ($validDates as $date) {
             if (! array_key_exists($date, $validated['dates'])) {
+                continue;
+            }
+
+            if ($validated['dates'][$date] === self::CLEAR_STATUS) {
+                $toClear[] = $date;
+
                 continue;
             }
 
@@ -75,6 +92,13 @@ class VacationDatePlannerController extends Controller
                 ['user_id' => $user->id, 'date' => $date],
                 ['status' => $validated['dates'][$date]],
             );
+        }
+
+        if (! empty($toClear)) {
+            $vacation->dateAvailabilities()
+                ->where('user_id', $user->id)
+                ->whereIn('date', $toClear)
+                ->delete();
         }
 
         if ($request->wantsJson()) {

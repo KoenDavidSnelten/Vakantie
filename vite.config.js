@@ -10,8 +10,10 @@ export default defineConfig({
     ],
     server: {
         host: '0.0.0.0',
-        hmr: {
-            host: '192.168.2.3',
-        },
+        // Alleen nodig als je de dev-server vanaf een ander apparaat opent:
+        // zet VITE_HMR_HOST op het LAN-adres van je werkstation.
+        hmr: process.env.VITE_HMR_HOST
+            ? { host: process.env.VITE_HMR_HOST }
+            : undefined,
     },
 });

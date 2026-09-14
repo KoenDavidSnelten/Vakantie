@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout :title="'Bewerken · '.$vacation->name">
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-slate-900 leading-tight">
@@ -63,19 +63,8 @@
                     </div>
 
                     <div class="flex items-center gap-4">
-                        <x-primary-button>{{ __('Opslaan') }}</x-primary-button>
-
-                        @if (session('status') === 'vacation-created')
-                            <p class="text-sm text-slate-600">{{ __('Vakantie aangemaakt.') }}</p>
-                        @elseif (session('status') === 'vacation-updated')
-                            <p
-                                x-data="{ show: true }"
-                                x-show="show"
-                                x-transition
-                                x-init="setTimeout(() => show = false, 2000)"
-                                class="text-sm text-slate-600"
-                            >{{ __('Opgeslagen.') }}</p>
-                        @endif
+                        <x-primary-button data-busy-label="Opslaan&hellip;">{{ __('Opslaan') }}</x-primary-button>
+                        <a href="{{ route('vacations.show', $vacation) }}" class="rounded text-sm text-slate-600 transition hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500">{{ __('Annuleren') }}</a>
                     </div>
                 </form>
             </div>

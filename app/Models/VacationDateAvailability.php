@@ -3,11 +3,16 @@
 namespace App\Models;
 
 use App\Enums\AvailabilityStatus;
+use Database\Factories\VacationDateAvailabilityFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class VacationDateAvailability extends Model
 {
+    /** @use HasFactory<VacationDateAvailabilityFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'vacation_id',
         'user_id',

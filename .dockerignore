@@ -1,0 +1,40 @@
+.git
+.gitattributes
+.github
+.idea
+.vscode
+
+node_modules
+vendor
+
+.env
+.env.*
+!.env.docker.example
+
+database/*.sqlite
+database/*.sqlite-shm
+database/*.sqlite-wal
+database/*.sqlite.bak-*
+
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/pail
+
+# Lokaal gegenereerd met dev-dependencies erbij: packages.php zou dan naar
+# providers wijzen (Pail, Sail, Breeze) die in het image niet bestaan.
+# De entrypoint bouwt deze caches opnieuw op bij het starten.
+bootstrap/cache/*.php
+
+public/build
+public/hot
+public/storage
+
+tests
+phpunit.xml
+.phpunit.result.cache
+
+README.md
+Dockerfile
+compose.yml

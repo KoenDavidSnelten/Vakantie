@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\PriceUnit;
-use App\Enums\VacationPhase;
 use App\Models\Vacation;
 use App\Models\VacationHotel;
 use App\Models\VacationSkiArea;
@@ -20,9 +19,9 @@ class VacationHotelController extends Controller
 
         abort_unless($skiArea->vacation_id === $vacation->id, 404);
         abort_unless($user->isAdmin() || $vacation->users->contains('id', $user->id), 403);
-        abort_unless($vacation->phase === VacationPhase::Booking, 403);
+        abort_unless($vacation->phase->hasPlannerAccess(), 403);
 
-        $validated = $this->validateHotel($request);
+        $validated = $this->validateHotel($request, 'hotelNew'.$skiArea->id);
         $url = $validated['url'] ?? null;
         $manualImage = $validated['image_url'] ?? null;
 
@@ -46,8 +45,9 @@ class VacationHotelController extends Controller
         abort_unless($skiArea->vacation_id === $vacation->id, 404);
         abort_unless($hotel->vacation_ski_area_id === $skiArea->id, 404);
         abort_unless($user->isAdmin() || $hotel->user_id === $user->id, 403);
+        abort_unless($vacation->phase->hasPlannerAccess(), 403);
 
-        $validated = $this->validateHotel($request);
+        $validated = $this->validateHotel($request, 'hotel'.$hotel->id);
         $url = $validated['url'] ?? null;
         $manualImage = $validated['image_url'] ?? null;
 
@@ -102,11 +102,14 @@ class VacationHotelController extends Controller
     }
 
     /**
+     * Elk hotelformulier krijgt zijn eigen foutenzak: zonder dat zou een fout bij
+     * één hotel de melding onder elk formulier op de pagina zetten.
+     *
      * @return array<string, mixed>
      */
-    private function validateHotel(Request $request): array
+    private function validateHotel(Request $request, string $errorBag): array
     {
-        return $request->validate([
+        return $request->validateWithBag($errorBag, [
             'name' => ['required', 'string', 'max:255'],
             'url' => ['nullable', 'url', 'max:2048'],
             'image_url' => ['nullable', 'url', 'max:2048'],

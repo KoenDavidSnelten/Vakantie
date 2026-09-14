@@ -2,11 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 
 class VacationSkiArea extends Model
 {
@@ -22,7 +20,6 @@ class VacationSkiArea extends Model
         'price_ski_pass',
         'distance_to_slopes_km',
         'has_bus',
-        'ski_area_map_path',
         'ski_area_map_url',
     ];
 
@@ -33,17 +30,6 @@ class VacationSkiArea extends Model
             'distance_to_slopes_km' => 'decimal:1',
             'has_bus' => 'boolean',
         ];
-    }
-
-    /**
-     * Resolves to the uploaded map's public URL when one was uploaded,
-     * otherwise falls back to the manually pasted link (if any).
-     */
-    protected function skiAreaMapUrl(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value) => $this->ski_area_map_path ? Storage::disk('public')->url($this->ski_area_map_path) : $value,
-        );
     }
 
     public function vacation(): BelongsTo

@@ -18,7 +18,7 @@ class VacationVehicleController extends Controller
         abort_unless($user->isAdmin() || $vacation->users->contains('id', $user->id), 403);
         abort_unless($vacation->phase->hasPlannerAccess(), 403);
 
-        $validated = $this->validateVehicle($request);
+        $validated = $this->validateVehicle($request, 'vehicleNew');
         $isRental = $validated['type'] === VehicleType::Rental->value;
 
         $vacation->vehicles()->create([
@@ -43,7 +43,7 @@ class VacationVehicleController extends Controller
         abort_unless($user->isAdmin() || $vehicle->user_id === $user->id, 403);
         abort_unless($vacation->phase->hasPlannerAccess(), 403);
 
-        $validated = $this->validateVehicle($request);
+        $validated = $this->validateVehicle($request, 'vehicle'.$vehicle->id);
         $isRental = $validated['type'] === VehicleType::Rental->value;
 
         $vehicle->update([
@@ -72,11 +72,13 @@ class VacationVehicleController extends Controller
     }
 
     /**
+     * Eigen foutenzak per formulier, zodat een fout niet onder alle auto's verschijnt.
+     *
      * @return array<string, mixed>
      */
-    private function validateVehicle(Request $request): array
+    private function validateVehicle(Request $request, string $errorBag): array
     {
-        return $request->validate([
+        return $request->validateWithBag($errorBag, [
             'type' => ['required', Rule::enum(VehicleType::class)],
             'car_model' => ['required', 'string', 'max:255'],
             'seats' => ['nullable', 'integer', 'min:1', 'max:99'],

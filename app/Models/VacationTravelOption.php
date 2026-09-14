@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\TravelOptionType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -11,7 +10,7 @@ class VacationTravelOption extends Model
     protected $fillable = [
         'vacation_id',
         'user_id',
-        'type',
+        'vacation_ski_area_id',
         'name',
         'url',
         'price_per_person',
@@ -21,7 +20,6 @@ class VacationTravelOption extends Model
     protected function casts(): array
     {
         return [
-            'type' => TravelOptionType::class,
             'price_per_person' => 'decimal:2',
         ];
     }
@@ -34,5 +32,14 @@ class VacationTravelOption extends Model
     public function addedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Het skigebied waar deze reisoptie heen gaat, gekozen uit de gebieden die
+     * al in de locatieplanner staan. Null als de bestemming nog openligt.
+     */
+    public function skiArea(): BelongsTo
+    {
+        return $this->belongsTo(VacationSkiArea::class, 'vacation_ski_area_id');
     }
 }

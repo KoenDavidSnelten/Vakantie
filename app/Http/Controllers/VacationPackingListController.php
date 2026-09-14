@@ -36,7 +36,7 @@ class VacationPackingListController extends Controller
 
         abort_unless($user->isAdmin() || $vacation->users->contains('id', $user->id), 403);
 
-        $validated = $request->validate([
+        $validated = $request->validateWithBag('packingItem', [
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', Rule::enum(PackingCategory::class)],
         ]);

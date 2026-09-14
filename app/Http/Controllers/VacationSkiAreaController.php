@@ -6,7 +6,6 @@ use App\Models\Vacation;
 use App\Models\VacationSkiArea;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -24,10 +23,10 @@ class VacationSkiAreaController extends Controller
 
         $vacation->load([
             'users',
-            'skiAreas.votes',
+            'skiAreas.votes.user',
             'skiAreas.addedBy',
             'skiAreas.comments.user',
-            'skiAreas.hotels.votes',
+            'skiAreas.hotels.votes.user',
             'skiAreas.hotels.addedBy',
             'skiAreas.hotels.comments.user',
         ]);
@@ -42,9 +41,9 @@ class VacationSkiAreaController extends Controller
         $user = $request->user();
 
         abort_unless($user->isAdmin() || $vacation->users->contains('id', $user->id), 403);
+        abort_unless($vacation->phase->hasPlannerAccess(), 403);
 
-        $validated = $this->validateSkiArea($request);
-        $skiAreaMap = $this->resolveSkiAreaMap($request, null, $validated);
+        $validated = $this->validateSkiArea($request, 'skiAreaNew');
 
         $vacation->skiAreas()->create([
             'user_id' => $user->id,
@@ -52,8 +51,7 @@ class VacationSkiAreaController extends Controller
             'price_ski_pass' => $validated['price_ski_pass'] ?? null,
             'distance_to_slopes_km' => $validated['distance_to_slopes_km'] ?? null,
             'has_bus' => $request->boolean('has_bus'),
-            'ski_area_map_path' => $skiAreaMap['path'],
-            'ski_area_map_url' => $skiAreaMap['url'],
+            'ski_area_map_url' => $validated['ski_area_map_url'] ?? null,
         ]);
 
         return redirect()->route('vacations.locations.index', $vacation)->with('status', 'ski-area-added');
@@ -65,17 +63,16 @@ class VacationSkiAreaController extends Controller
 
         abort_unless($skiArea->vacation_id === $vacation->id, 404);
         abort_unless($user->isAdmin() || $skiArea->user_id === $user->id, 403);
+        abort_unless($vacation->phase->hasPlannerAccess(), 403);
 
-        $validated = $this->validateSkiArea($request);
-        $skiAreaMap = $this->resolveSkiAreaMap($request, $skiArea, $validated);
+        $validated = $this->validateSkiArea($request, 'skiArea'.$skiArea->id);
 
         $skiArea->update([
             'name' => $validated['name'],
             'price_ski_pass' => $validated['price_ski_pass'] ?? null,
             'distance_to_slopes_km' => $validated['distance_to_slopes_km'] ?? null,
             'has_bus' => $request->boolean('has_bus'),
-            'ski_area_map_path' => $skiAreaMap['path'],
-            'ski_area_map_url' => $skiAreaMap['url'],
+            'ski_area_map_url' => $validated['ski_area_map_url'] ?? null,
         ]);
 
         return redirect()->route('vacations.locations.index', $vacation)->with('status', 'ski-area-updated');
@@ -87,10 +84,6 @@ class VacationSkiAreaController extends Controller
 
         abort_unless($skiArea->vacation_id === $vacation->id, 404);
         abort_unless($user->isAdmin() || $skiArea->user_id === $user->id, 403);
-
-        if ($skiArea->ski_area_map_path) {
-            Storage::disk('public')->delete($skiArea->ski_area_map_path);
-        }
 
         $skiArea->delete();
 
@@ -122,51 +115,18 @@ class VacationSkiAreaController extends Controller
     }
 
     /**
+     * Elk formulier op de locatiepagina valideert in zijn eigen foutenzak, anders
+     * verschijnt een fout van één formulier onder alle andere formulieren op de pagina.
+     *
      * @return array<string, mixed>
      */
-    private function validateSkiArea(Request $request): array
+    private function validateSkiArea(Request $request, string $errorBag): array
     {
-        return $request->validate([
+        return $request->validateWithBag($errorBag, [
             'name' => ['required', 'string', 'max:255'],
             'price_ski_pass' => ['nullable', 'numeric', 'min:0'],
             'distance_to_slopes_km' => ['nullable', 'numeric', 'min:0', 'max:999'],
-            'ski_area_map' => ['nullable', 'image', 'max:8192'],
             'ski_area_map_url' => ['nullable', 'url', 'max:2048'],
         ]);
-    }
-
-    /**
-     * An uploaded file always wins over a pasted link. Switching either one
-     * replaces (and cleans up) whatever was there before; leaving both empty
-     * keeps whatever the ski area already had.
-     *
-     * @param  array<string, mixed>  $validated
-     * @return array{path: ?string, url: ?string}
-     */
-    private function resolveSkiAreaMap(Request $request, ?VacationSkiArea $existing, array $validated): array
-    {
-        if ($request->hasFile('ski_area_map')) {
-            if ($existing?->ski_area_map_path) {
-                Storage::disk('public')->delete($existing->ski_area_map_path);
-            }
-
-            return [
-                'path' => $request->file('ski_area_map')->store('ski-area-maps', 'public'),
-                'url' => null,
-            ];
-        }
-
-        if (! empty($validated['ski_area_map_url'])) {
-            if ($existing?->ski_area_map_path) {
-                Storage::disk('public')->delete($existing->ski_area_map_path);
-            }
-
-            return ['path' => null, 'url' => $validated['ski_area_map_url']];
-        }
-
-        return [
-            'path' => $existing?->ski_area_map_path,
-            'url' => $existing?->getRawOriginal('ski_area_map_url'),
-        ];
     }
 }

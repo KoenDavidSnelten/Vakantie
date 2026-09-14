@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\VehicleType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class VacationVehicle extends Model
 {
@@ -40,5 +41,29 @@ class VacationVehicle extends Model
     public function addedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Wie er in deze auto meerijdt (de chauffeur telt gewoon mee als inzittende).
+     */
+    public function passengers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'vacation_vehicle_passengers')
+            ->withTimestamps()
+            ->orderBy('name');
+    }
+
+    /**
+     * Hoeveel plekken er nog vrij zijn, of null als het aantal zitplaatsen
+     * niet is ingevuld.
+     */
+    public function seatsLeft(): ?int
+    {
+        return $this->seats === null ? null : max(0, $this->seats - $this->passengers->count());
+    }
+
+    public function isFull(): bool
+    {
+        return $this->seatsLeft() === 0;
     }
 }

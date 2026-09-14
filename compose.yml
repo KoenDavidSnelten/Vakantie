@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    image: vakantie:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    env_file: .env.docker
+    volumes:
+      # Het enige dat de app nog bewaart: het SQLite-bestand. Een submap,
+      # want een volume op database/ zelf zou de migrations verbergen die
+      # in het image zitten.
+      - vakantie-db:/var/www/html/database/sqlite
+
+volumes:
+  vakantie-db:

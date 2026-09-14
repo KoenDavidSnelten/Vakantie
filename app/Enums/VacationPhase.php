@@ -28,8 +28,8 @@ enum VacationPhase: string
     public function description(): string
     {
         return match ($this) {
-            self::Planning => 'De reis krijgt vorm. Prik samen een datum in de datumplanner en stem in de locatieplanner op skigebieden en hotels.',
-            self::Booking => 'Datum en locatie staan vast. Nu worden de hotels geboekt, de prijzen per persoon kloppen pas als het aantal deelnemers bekend is.',
+            self::Planning => 'De reis krijgt vorm. Prik samen een datum in de datumplanner en verzamel in de locatieplanner alvast skigebieden en hotels, zodat je op je favorieten kunt stemmen.',
+            self::Booking => 'Datum en locatie staan vast. Werk de hotelprijzen nog even bij (die kloppen pas als de datum en het aantal deelnemers vaststaan) en boek daarna het gekozen hotel.',
             self::TravelPlanning => 'Regel het vervoer in de reisplanner: voeg voertuigen en reisopties toe en verdeel wie met wie meerijdt.',
             self::OnVacation => 'Het is zover! De planners zijn afgesloten; gebruik de paklijst zodat niemand iets vergeet.',
             self::Finished => 'De vakantie zit erop. Je kunt alles nog als naslag terugkijken.',
@@ -48,10 +48,10 @@ enum VacationPhase: string
     }
 
     /**
-     * The date/ski-area/travel planner pages are reachable during these
-     * phases; hotels specifically only become bookable once Booking starts,
-     * since the participant count (needed for per-person prices) isn't
-     * reliable until then.
+     * The date/ski-area/travel planner pages (including adding hotels) are
+     * reachable during these phases, so hotels can already be scouted while
+     * planning; their prices get updated again in the booking phase, once the
+     * date and participant count are final.
      */
     public function hasPlannerAccess(): bool
     {

@@ -20,9 +20,21 @@ enum AvailabilityStatus: string
     public function badgeClasses(): string
     {
         return match ($this) {
-            self::Can => 'bg-emerald-100 text-emerald-700',
-            self::Maybe => 'bg-orange-100 text-orange-800',
-            self::Cannot => 'bg-rose-100 text-rose-700',
+            self::Can => 'bg-emerald-100 text-emerald-900 ring-1 ring-emerald-400',
+            self::Maybe => 'bg-orange-100 text-orange-900 ring-1 ring-orange-400',
+            self::Cannot => 'bg-rose-100 text-rose-900 ring-1 ring-rose-400',
+        };
+    }
+
+    /**
+     * Enkel de vulkleur, voor het overzichtsrooster waar de kleur zelf het label is.
+     */
+    public function solidClasses(): string
+    {
+        return match ($this) {
+            self::Can => 'bg-emerald-500',
+            self::Maybe => 'bg-orange-500',
+            self::Cannot => 'bg-rose-500',
         };
     }
 

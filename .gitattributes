@@ -9,3 +9,6 @@
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+
+# Moet LF houden: met CRLF weigert de container de shebang uit te voeren.
+docker/entrypoint.sh text eol=lf

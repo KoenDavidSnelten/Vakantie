@@ -19,7 +19,7 @@ class VacationTravelPlannerController extends Controller
             return redirect()->route('vacations.show', $vacation);
         }
 
-        $vacation->load(['users', 'vehicles.addedBy', 'travelOptions.addedBy']);
+        $vacation->load(['users', 'vehicles.addedBy', 'vehicles.passengers', 'travelOptions.addedBy', 'travelOptions.skiArea', 'skiAreas']);
 
         return view('vacations.travel-planner', [
             'vacation' => $vacation,

@@ -308,29 +308,38 @@
                                                 @endif
                                             >
                                                 @if ($inRange)
-                                                    <p class="text-center text-sm font-bold {{ $date === $today ? 'text-white' : 'text-slate-900' }}">
-                                                        <span class="{{ $date === $today ? 'inline-block min-w-[1.5rem] rounded-full bg-slate-900 px-1' : '' }}">
-                                                            {{ Carbon::parse($date)->format('j') }}
-                                                        </span>
-                                                    </p>
+                                                    {{-- Dagnummer en wisknop naast elkaar in plaats van over elkaar:
+                                                         een cel is op een telefoon maar zo'n 46px breed, en een
+                                                         absoluut geplaatste ✕ kwam daar bovenop het dagnummer. De
+                                                         onzichtbare spacer houdt het nummer op bredere schermen
+                                                         optisch in het midden. --}}
+                                                    <div class="flex items-center gap-0.5">
+                                                        <span class="hidden h-5 w-5 shrink-0 sm:block" aria-hidden="true"></span>
 
-                                                    {{-- Wissen: verschijnt zodra deze dag een status heeft, zodat een
-                                                         verkeerde tik terug te draaien is zonder de cel hoger te maken. --}}
-                                                    <label
-                                                        class="absolute right-0.5 top-0.5 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full text-[10px] font-bold text-slate-500 opacity-0 transition group-has-[input:checked]/day:opacity-100 group-has-[input:checked]/day:hover:bg-white group-has-[input:checked]/day:hover:text-slate-900 has-[:focus-visible]:opacity-100 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500"
-                                                        title="Leegmaken"
-                                                        @mousedown="start('{{ $clearStatus }}', $el.querySelector('input'))"
-                                                        @touchstart="start('{{ $clearStatus }}', $el.querySelector('input'))"
-                                                    >
-                                                        <input
-                                                            type="radio"
-                                                            name="dates[{{ $date }}]"
-                                                            value="{{ $clearStatus }}"
-                                                            class="sr-only"
-                                                            aria-label="{{ $readableDate }}: leegmaken"
+                                                        <p class="flex-1 text-center text-xs font-bold sm:text-sm {{ $date === $today ? 'text-white' : 'text-slate-900' }}">
+                                                            <span class="{{ $date === $today ? 'inline-block min-w-[1.25rem] rounded-full bg-slate-900 px-0.5 sm:min-w-[1.5rem] sm:px-1' : '' }}">
+                                                                {{ Carbon::parse($date)->format('j') }}
+                                                            </span>
+                                                        </p>
+
+                                                        {{-- Wissen: verschijnt zodra deze dag een status heeft, zodat
+                                                             een verkeerde tik terug te draaien is. --}}
+                                                        <label
+                                                            class="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-[10px] font-bold text-slate-500 opacity-0 transition group-has-[input:checked]/day:opacity-100 group-has-[input:checked]/day:hover:bg-white group-has-[input:checked]/day:hover:text-slate-900 has-[:focus-visible]:opacity-100 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-sky-500"
+                                                            title="Leegmaken"
+                                                            @mousedown="start('{{ $clearStatus }}', $el.querySelector('input'))"
+                                                            @touchstart="start('{{ $clearStatus }}', $el.querySelector('input'))"
                                                         >
-                                                        <span aria-hidden="true">✕</span>
-                                                    </label>
+                                                            <input
+                                                                type="radio"
+                                                                name="dates[{{ $date }}]"
+                                                                value="{{ $clearStatus }}"
+                                                                class="sr-only"
+                                                                aria-label="{{ $readableDate }}: leegmaken"
+                                                            >
+                                                            <span aria-hidden="true">✕</span>
+                                                        </label>
+                                                    </div>
 
                                                     <div class="mt-1 flex flex-col items-center justify-center" role="radiogroup" aria-label="Beschikbaarheid op {{ $readableDate }}">
                                                         @foreach (AvailabilityStatus::cases() as $option)

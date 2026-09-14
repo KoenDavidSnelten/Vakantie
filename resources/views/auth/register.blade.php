@@ -140,11 +140,8 @@
                         get rules() {
                             const p = this.password;
                             return [
-                                { label: @js(__('Minstens 10 tekens')),   ok: p.length >= 10 },
-                                { label: @js(__('Een kleine letter')),    ok: /[a-z]/.test(p) },
-                                { label: @js(__('Een hoofdletter')),      ok: /[A-Z]/.test(p) },
-                                { label: @js(__('Een cijfer')),           ok: /[0-9]/.test(p) },
-                                { label: @js(__('Een symbool')),          ok: /[^A-Za-z0-9]/.test(p) },
+                                { label: @js(__('Minstens 8 tekens')), ok: p.length >= 8 },
+                                { label: @js(__('Minstens één letter')), ok: /[a-zA-Z]/.test(p) },
                             ];
                         },
                         get match() {

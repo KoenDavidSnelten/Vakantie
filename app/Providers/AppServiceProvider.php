@@ -20,15 +20,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Sterkere wachtwoordeisen voor registratie, wachtwoord-reset en -wijzigen.
-        // Minimaal 10 tekens, hoofd- en kleine letters, cijfers en symbolen, en
-        // niet voorkomend in bekende datalekken (fails open als de check niet lukt).
+        // Wachtwoordeisen voor registratie, wachtwoord-reset en -wijzigen.
+        //
+        // Bewust géén eisen aan hoofdletters, cijfers of symbolen: die leveren
+        // vooral voorspelbare wachtwoorden op ("Wachtwoord1!") en kosten meer
+        // aan afhakende gebruikers dan ze aan veiligheid opleveren. NIST
+        // SP 800-63B raadt ze om die reden af.
+        //
+        // Wat overblijft is wat wél werkt: een ondergrens aan de lengte en een
+        // controle tegen bekende datalekken, want hergebruikte wachtwoorden
+        // zijn hoe accounts in de praktijk overgenomen worden. Die controle
+        // kost niets voor wie een uniek wachtwoord kiest, en fails open als
+        // de dienst onbereikbaar is.
         Password::defaults(function () {
-            return Password::min(10)
+            return Password::min(8)
                 ->letters()
-                ->mixedCase()
-                ->numbers()
-                ->symbols()
                 ->uncompromised();
         });
     }

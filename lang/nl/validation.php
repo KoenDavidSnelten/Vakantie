@@ -80,6 +80,9 @@ return [
      * Veldnamen zoals ze in de meldingen terugkomen.
      */
     'attributes' => [
+        'avatar_color' => 'Avatarkleur',
+        'avatar_frame' => 'Avatarrandje',
+        'avatar_symbol' => 'Avatarfiguur',
         'car_model' => 'Automerk en -model',
         'category' => 'Categorie',
         'current_password' => 'Huidig wachtwoord',

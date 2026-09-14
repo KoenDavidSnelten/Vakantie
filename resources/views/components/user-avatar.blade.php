@@ -1,44 +1,31 @@
 @props(['user', 'size' => 'md'])
 
 @php
-    // Voluit geschreven klassenamen: Tailwind scant Blade-bestanden als platte
-    // tekst, dus samengestelde namen ('bg-'.$kleur.'-600') zouden uit de
-    // productie-build gefilterd worden en elke avatar zou doorzichtig zijn.
-    $palette = [
-        'bg-sky-600',
-        'bg-emerald-600',
-        'bg-amber-600',
-        'bg-rose-600',
-        'bg-violet-600',
-        'bg-teal-600',
-        'bg-indigo-600',
-        'bg-orange-600',
-    ];
-
     $sizes = [
-        'sm' => 'h-6 w-6 text-xs',
-        'md' => 'h-10 w-10 text-sm',
-        'lg' => 'h-16 w-16 text-xl',
+        'xs' => ['box' => 'h-6 w-6', 'text' => 'text-xs', 'glyph' => 'text-sm'],
+        'sm' => ['box' => 'h-8 w-8', 'text' => 'text-xs', 'glyph' => 'text-base'],
+        'md' => ['box' => 'h-10 w-10', 'text' => 'text-sm', 'glyph' => 'text-xl'],
+        'lg' => ['box' => 'h-16 w-16', 'text' => 'text-xl', 'glyph' => 'text-3xl'],
+        'xl' => ['box' => 'h-24 w-24', 'text' => 'text-3xl', 'glyph' => 'text-5xl'],
     ];
 
-    // Op het e-mailadres i.p.v. de naam: dan houdt iemand dezelfde kleur
-    // nadat hij zijn naam wijzigt.
-    $background = $palette[abs(crc32((string) $user->email)) % count($palette)];
+    $dimensions = $sizes[$size] ?? $sizes['md'];
 
-    // Eerste en laatste woord, niet de eerste twee: anders wordt
-    // "Anne de Vries" tot "AD" in plaats van "AV".
-    $words = Str::of($user->name)->squish()->explode(' ')->filter()->values();
+    $symbol = $user->avatarSymbol();
+    $glyph = $symbol->glyph();
 
-    $initials = $words->count() > 1
-        ? Str::substr($words->first(), 0, 1).Str::substr($words->last(), 0, 1)
-        : Str::substr($words->first() ?? '', 0, 1);
+    // Het symbool wordt als tekst getekend, dus het schaalt mee met de
+    // lettergrootte; de initialen staan er wat kleiner in dan een emoji.
+    $scale = $glyph === '' ? $dimensions['text'] : $dimensions['glyph'];
 @endphp
 
 <span
     {{ $attributes->class([
-        'inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold text-white',
-        $sizes[$size] ?? $sizes['md'],
-        $background,
+        'inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold leading-none text-white',
+        $dimensions['box'],
+        $scale,
+        $user->avatarColor()->backgroundClass(),
+        $user->avatarFrame()->frameClass(),
     ]) }}
     aria-hidden="true"
->{{ Str::upper($initials) }}</span>
+>{{ $glyph !== '' ? $glyph : $user->initials() }}</span>

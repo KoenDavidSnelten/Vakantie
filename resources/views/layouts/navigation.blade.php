@@ -29,7 +29,7 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-full text-slate-600 bg-white hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            <x-user-avatar :user="Auth::user()" size="sm" class="me-2" />
+                            <x-user-avatar :user="Auth::user()" size="xs" class="me-2" />
 
                             <div>{{ Auth::user()->name }}</div>
 

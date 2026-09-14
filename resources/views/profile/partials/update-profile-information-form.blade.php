@@ -17,12 +17,7 @@
         @csrf
         @method('patch')
 
-        <div class="flex items-center gap-4">
-            <x-user-avatar :user="$user" size="lg" />
-            <p class="text-sm text-slate-600">
-                {{ __('Your avatar is made from your initials and never changes colour.') }}
-            </p>
-        </div>
+        @include('profile.partials.avatar-picker')
 
         <div>
             <x-input-label for="name" :value="__('Name')" />

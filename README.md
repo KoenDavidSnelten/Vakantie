@@ -92,13 +92,49 @@ pistekaart is een link, geen upload.
 
 ### Een wijziging uitrollen
 
+Op je werkstation:
+
+```bash
+git add -A
+git commit -m "Beschrijf wat je veranderd hebt"
+git push
+```
+
+Op de Pi:
+
+```bash
+cd /srv/vakantie && git pull && docker compose up -d --build
+```
+
+Migraties draaien automatisch bij het opstarten van de container, dus een
+aparte stap daarvoor is er niet.
+
+`--build` is altijd nodig, ook voor een wijziging van één regel Blade: de
+code zit in het image gebakken en wordt niet vanaf schijf ingeladen. Docker
+hergebruikt wel zijn cache, dus zolang `composer.json` en `package.json`
+ongemoeid blijven duurt het minder dan een minuut.
+
+Controleren of het goed ging:
+
+```bash
+docker compose ps          # STATUS terug op "healthy"
+docker compose logs -f app # meekijken, Ctrl+C om te stoppen
+```
+
+### Terugdraaien na een mislukte uitrol
+
 ```bash
 cd /srv/vakantie
-git pull
+git log --oneline -5       # zoek de commit vóór de kapotte
+git checkout <hash>
 docker compose up -d --build
 ```
 
-Migraties draaien automatisch bij het opstarten van de container.
+Terug naar de laatste versie met `git checkout master && git pull`.
+
+Let op bij migraties: de code terugdraaien draait een migratie die al
+gelopen heeft *niet* terug. Zat er een migratie in de uitrol, maak dan
+eerst een back-up (zie hieronder).
 
 ### Bestaande data meenemen
 

@@ -1,0 +1,33 @@
+# Caddy doet twee dingen tegelijk: hij handelt https af en hij haalt het
+# certificaat op. Dat tweede kan hij zelf, zonder aparte container en zonder
+# cronjob, omdat hij de controle van Let's Encrypt afhandelt op de verbinding
+# die hij toch al openhoudt.
+#
+# De waarden tussen {$...} komen uit .env.proxy.
+
+{$DOMAIN} {
+	tls {
+		issuer acme {
+			dir   {$ACME_CA}
+			email {$LETSENCRYPT_EMAIL}
+
+			# De gebruikelijke controle loopt over poort 80 en die blokkeert de
+			# provider. Uitzetten dus, dan gebruikt Caddy tls-alpn-01 en gaat
+			# alles over 443.
+			disable_http_challenge
+		}
+	}
+
+	# De app comprimeert zelf niets; dat gebeurt hier.
+	encode gzip
+
+	# Caddy zet X-Forwarded-For, -Proto en -Host er vanzelf bij. Laravel leest
+	# die via trustProxies in bootstrap/app.php en weet daardoor dat het
+	# oorspronkelijke verzoek over https binnenkwam.
+	reverse_proxy app:80
+
+	# Gelijk aan client_max_body_size in docker/nginx.conf.
+	request_body {
+		max_size 2MB
+	}
+}

@@ -42,31 +42,31 @@ Er draaien twee containers:
 | Container | Doet |
 | --- | --- |
 | `app` | de site zelf: nginx en php-fpm samen, onder supervisord |
-| `proxy` | handelt https af en zet alles door naar `app` |
+| `caddy` | handelt https af, haalt het certificaat op en zet alles door naar `app` |
 
-Alleen `proxy` hangt aan een poort van de Pi. De app is van buitenaf niet
+Alleen `caddy` hangt aan een poort van de Pi. De app is van buitenaf niet
 rechtstreeks te bereiken, ook niet vanaf je eigen netwerk.
-
-Er is een derde service, `certbot`, maar die draait niet mee. Hij staat onder
-een profiel en start alleen als een script hem aanroept.
 
 **Over poort 80.** De provider blokkeert inkomend verkeer op poort 80. De
 gebruikelijke manier om een certificaat op te halen (http-01) loopt daarover en
 kan dus niet. In plaats daarvan gebruiken we **tls-alpn-01**: Let's Encrypt
 bewijst het eigendom van het domein via een speciale TLS-handdruk op poort 443.
-Daar is verder niets bijzonders voor nodig behalve dat poort 443 openstaat.
+Verder is daar niets bijzonders voor nodig behalve dat poort 443 openstaat.
 
-Certbot heeft die poort tijdens de controle wel even helemaal voor zichzelf
-nodig, en die is in gebruik door de proxy. Verlengen betekent dus: proxy uit,
-certificaat ophalen, proxy aan. Dat kost een seconde of tien en gebeurt
-'s nachts.
+Daar is Caddy voor gekozen en niet nginx: Caddy doet die handdruk zelf, op de
+poort waar hij toch al luistert. Er is dus geen aparte certbot-container, geen
+cronjob, geen verlengscript, en de site gaat bij het verlengen niet even uit.
+Certbot kan tls-alpn-01 niet — dat kent alleen http-01 en dns-01.
+
+De nginx in de `app`-container blijft gewoon staan; die serveert Laravel uit en
+staat los van dit alles.
 
 Het image wordt op de Pi zelf gebouwd, dus er is geen registry nodig en geen
 gedoe met architecturen.
 
 Het SQLite-bestand staat in het volume `vakantie-db`. Verder schrijft de app
 niets naar schijf: avatars worden uit de initialen gegenereerd en een
-pistekaart is een link, geen upload. De certificaten staan in `certbot-conf`.
+pistekaart is een link, geen upload. De certificaten staan in `caddy-data`.
 
 ### Eenmalig instellen
 
@@ -109,6 +109,7 @@ pistekaart is een link, geen upload. De certificaten staan in `certbot-conf`.
 
    - `DOMAIN` — dezelfde domeinnaam, maar kaal: zonder `https://` en zonder slash
    - `LETSENCRYPT_EMAIL` — hier komt de waarschuwing binnen als een verlenging mislukt
+   - `ACME_CA` — laat op de echte server staan; zie stap 7 voor de testserver
 
 5. **DNS:** maak bij je domeinregistrar een A-record dat je domeinnaam naar het
    publieke IP van je aansluiting wijst. Controleer dat het klopt:
@@ -136,50 +137,38 @@ pistekaart is een link, geen upload. De certificaten staan in `certbot-conf`.
 
    Poort 80 doorzetten heeft geen zin zolang de provider hem blokkeert.
 
-7. **Starten en het certificaat ophalen:**
+7. **Eerst een testcertificaat.** Zet in `.env.proxy` de testserver aan:
 
-   ```bash
-   ./docker/init-letsencrypt.sh --staging   # eerst met een testcertificaat
+   ```
+   # ACME_CA=https://acme-v02.api.letsencrypt.org/directory
+   ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
    ```
 
-   Doe deze stap altijd eerst met `--staging`. Let's Encrypt staat maar vijf
-   mislukte aanvragen per uur toe, en de fouten die je op dit punt maakt — DNS
-   nog niet doorgekomen, poort 443 dicht — kosten je anders in één keer je
-   hele budget. De browser zal klagen over het certificaat, dat hoort.
-
-   Gaat het goed, dan het echte werk:
+   Let's Encrypt staat maar een handvol mislukte aanvragen per uur toe, en de
+   fouten die je op dit punt maakt — DNS nog niet doorgekomen, poort 443 dicht —
+   kosten je anders in één keer je hele budget. De testserver heeft die limiet
+   niet.
 
    ```bash
-   ./docker/init-letsencrypt.sh
+   docker compose up -d --build
+   docker compose logs -f caddy
+   ```
+
+   In de logs wil je `certificate obtained successfully` zien. De browser gaat
+   klagen dat het certificaat niet vertrouwd wordt — **dat hoort zo**, en het is
+   precies het bewijs dat de rest werkt.
+
+8. **Dan het echte certificaat.** Draai `ACME_CA` in `.env.proxy` weer om, en
+   gooi het testcertificaat weg — anders blijft Caddy dat gebruiken:
+
+   ```bash
+   docker compose down
+   docker volume rm vakantie_caddy-data
    docker compose up -d --build
    ```
 
-   Dit script draai je nooit meer.
-
-8. **Cronjob voor het verlengen.** Zonder deze stap verloopt je certificaat na
-   negentig dagen en is de site onbereikbaar. Openen met:
-
-   ```bash
-   crontab -e
-   ```
-
-   En onderaan toevoegen:
-
-   ```
-   17 4 * * * /srv/vakantie/docker/renew-cert.sh >> /var/log/vakantie-cert.log 2>&1
-   ```
-
-   Dat draait elke nacht om 04:17. Certbot stopt meteen als het certificaat nog
-   meer dan dertig dagen geldig is, dus meestal gebeurt er niets en staat de
-   site minder dan tien seconden stil. Een onregelmatig tijdstip als 17 over is
-   netter dan precies 4 uur: Let's Encrypt krijgt anders van de hele wereld
-   tegelijk verzoeken.
-
-   Controleren of het werkt, zonder te wachten tot de nacht:
-
-   ```bash
-   ./docker/renew-cert.sh
-   ```
+   Verder is er niets in te stellen. Caddy verlengt vanzelf, ruim voor de
+   vervaldatum, zonder de site te onderbreken. Geen cronjob nodig.
 
 ### Een wijziging uitrollen
 
@@ -264,8 +253,7 @@ sqlite3 vakantie-2026-09-14.sqlite "pragma integrity_check;"
 
 ```bash
 docker compose logs -f app                        # logs van de app volgen
-docker compose logs -f proxy                      # verkeer dat binnenkomt
-tail -f /var/log/vakantie-cert.log                # verlengingen
+docker compose logs -f caddy                      # verkeer, en het certificaat
 docker compose exec app php artisan tinker        # tinker in de container
 docker compose ps                                 # status en healthcheck
 ```
@@ -274,37 +262,37 @@ docker compose ps                                 # status en healthcheck
 
 ## Over het certificaat
 
-Een certificaat van Let's Encrypt is negentig dagen geldig.
-[`docker/renew-cert.sh`](docker/renew-cert.sh) draait elke nacht vanuit cron en
-doet niets zolang er nog meer dan dertig dagen over zijn. Valt er wel wat te
-verlengen, dan gaat de proxy een paar tellen uit omdat certbot poort 443 nodig
-heeft voor de tls-alpn-01 controle, en komt hij daarna met het nieuwe
-certificaat weer op.
+Een certificaat van Let's Encrypt is negentig dagen geldig. Caddy houdt dat zelf
+bij en verlengt ruim op tijd, zonder de site te onderbreken en zonder dat er een
+cronjob aan te pas komt. Er is niets aan te onderhouden.
 
-Het script zet de proxy terug via een `trap`, ook als certbot faalt of je
-er middenin op Ctrl+C drukt. De site kan er dus niet door blijven hangen.
+De certificaten staan in het volume `caddy-data`. **Gooi dat niet weg** tenzij
+je een testcertificaat kwijt wil: bij elke verse start vraagt Caddy anders een
+nieuw certificaat aan, en Let's Encrypt heeft daar een weeklimiet op.
 
-Controleren hoe lang je certificaat nog geldig is:
+Zien wat Caddy met het certificaat doet:
 
 ```bash
-docker compose run --rm --entrypoint certbot certbot certificates
+docker compose logs caddy | grep -i -E "certificate|acme|obtain"
 ```
 
-Een verlenging droogzwemmen zonder er een echte aanvraag aan te wagen. De
-proxy moet daarvoor even uit, want certbot heeft poort 443 nodig:
+Controleren wat er nu daadwerkelijk uitgeserveerd wordt, inclusief de
+vervaldatum:
 
 ```bash
-docker compose stop proxy
-docker compose run --rm -p 443:443 --entrypoint certbot certbot renew --dry-run
-docker compose up -d proxy
+echo | openssl s_client -connect jouwdomein.nl:443 -servername jouwdomein.nl 2>/dev/null \
+  | openssl x509 -noout -issuer -dates
 ```
+
+Staat er `CN=...STAGING...` bij de issuer, dan draai je nog op het
+testcertificaat en moet `ACME_CA` in `.env.proxy` terug naar de echte server.
 
 ### Als er iets misgaat
 
-**`Timeout during connect` bij het aanvragen.** Let's Encrypt komt niet bij
-poort 443. Controleer de doorverwijzing in de router, en of de **WAN**-kolom
-bij HTTPS onder *Onderhoud → Extern beheer* uitstaat — anders houdt de router
-poort 443 zelf bezet.
+**Caddy blijft het certificaat opnieuw proberen.** Let's Encrypt komt niet bij
+poort 443. Controleer de doorverwijzing in de router (extern 443 → intern 443),
+en of de **WAN**-kolom bij HTTPS onder *Onderhoud → Extern beheer* uitstaat —
+anders houdt de router poort 443 voor zijn eigen inlogpagina.
 
 Test altijd van buiten je eigen netwerk, met mobiel internet en wifi uit. Van
 binnenuit beantwoordt de router je vaak zelf en lijkt alles in orde.
@@ -317,7 +305,7 @@ laatste is een doorverwijzing die niet klopt; het eerste zit hoger in de keten.
 **`unauthorized` of het verkeerde IP.** Het A-record wijst ergens anders heen.
 Vergelijk `getent hosts jouwdomein.nl` met `curl -s ifconfig.me` op de Pi.
 
-**502 Bad Gateway.** De proxy draait, de app niet. Kijk met
+**502 Bad Gateway.** Caddy draait, de app niet. Kijk met
 `docker compose ps` en `docker compose logs app`.
 
 **De site laadt zonder opmaak.** Dan wordt er `http://` in de HTML gezet en
@@ -330,14 +318,15 @@ configuratie wordt bij het opstarten gecachet.
 **Je komt niet voorbij het inlogscherm.** `SESSION_SECURE_COOKIE=true` terwijl
 je de site over `http://` benadert. Gebruik `https://`.
 
-**Een tweede domeinnaam erbij, bijvoorbeeld `www`.** Zet hem achter
-`server_name` in [`docker/proxy.conf.template`](docker/proxy.conf.template) en
-vraag het certificaat opnieuw aan met een extra `-d www.jouwdomein.nl`.
+**Een tweede domeinnaam erbij, bijvoorbeeld `www`.** Zet hem in
+[`docker/Caddyfile`](docker/Caddyfile) achter de eerste, gescheiden door een
+komma: `{$DOMAIN}, www.jouwdomein.nl {`. Caddy vraagt er dan vanzelf een
+certificaat voor aan. Zorg wel eerst dat er een A-record voor bestaat.
 
 ### Terug naar http, tijdelijk
 
-Draai je de app even zonder proxy, zet dan `SESSION_SECURE_COOKIE=false` in
-`.env.docker` en haal `trustProxies` weg. Die middleware-regel hoort er alleen
-in zolang er echt een proxy voor staat: op een container die zelf aan poort 80
-hangt zou hij iedereen toestaan `X-Forwarded-For` te vervalsen en zo zijn
-IP-adres te verbergen.
+Draai je de app even zonder Caddy ervoor, zet dan `SESSION_SECURE_COOKIE=false`
+in `.env.docker` en haal `trustProxies` weg. Die middleware-regel hoort er
+alleen in zolang er echt een proxy voor staat: op een container die zelf aan
+poort 80 hangt zou hij iedereen toestaan `X-Forwarded-For` te vervalsen en zo
+zijn IP-adres te verbergen.

@@ -1,43 +1,32 @@
 services:
-  # Handelt TLS af en zet alles door naar de app-container. Dit is de enige
+  # Handelt https af, haalt het certificaat op en verlengt het. Dit is de enige
   # service die poorten op de Pi publiceert; de app is van buitenaf niet
   # rechtstreeks te bereiken.
-  proxy:
-    image: nginx:1.27-alpine
+  caddy:
+    image: caddy:2-alpine
     restart: unless-stopped
     ports:
       # Poort 80 wordt door de provider geblokkeerd en is van buiten dus
-      # onbereikbaar. Hij blijft staan voor het bereiken van de site binnen je
-      # eigen netwerk en via de 8080-regel in de router.
+      # onbereikbaar. Hij blijft staan zodat de site binnen je eigen netwerk
+      # bereikbaar is; Caddy stuurt daar door naar https.
       - "80:80"
       - "443:443"
     env_file: .env.proxy
-    environment:
-      # Zonder dit filter zou het image ook andere omgevingsvariabelen in de
-      # template proberen in te vullen.
-      NGINX_ENVSUBST_FILTER: "^DOMAIN$$"
     volumes:
-      - ./docker/proxy.conf.template:/etc/nginx/templates/default.conf.template:ro
-      - certbot-conf:/etc/letsencrypt:ro
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Hier staan de certificaten. Dit volume moet blijven bestaan, anders
+      # vraagt Caddy bij elke herstart een nieuw certificaat aan en loop je
+      # tegen de limiet van Let's Encrypt aan.
+      - caddy-data:/data
+      - caddy-config:/config
     depends_on:
       - app
-
-  # Draait niet mee met `docker compose up`: het profiel zorgt dat deze service
-  # alleen opstart als je hem expliciet aanroept met `docker compose run`.
-  # Verlengen gebeurt via docker/renew-cert.sh op een cronjob, niet vanuit een
-  # container die eeuwig staat te wachten.
-  certbot:
-    image: certbot/certbot:latest
-    profiles:
-      - cert
-    volumes:
-      - certbot-conf:/etc/letsencrypt
 
   app:
     build: .
     image: vakantie:latest
     restart: unless-stopped
-    # expose in plaats van ports: alleen bereikbaar vanaf de proxy, niet vanaf
+    # expose in plaats van ports: alleen bereikbaar vanaf Caddy, niet vanaf
     # het netwerk waar de Pi in hangt.
     expose:
       - "80"
@@ -50,4 +39,5 @@ services:
 
 volumes:
   vakantie-db:
-  certbot-conf:
+  caddy-data:
+  caddy-config:

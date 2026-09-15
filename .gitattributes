@@ -10,8 +10,5 @@
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
 
-# Moeten LF houden: met CRLF weigeren de container en de Pi de shebang uit te
-# voeren.
+# Moet LF houden: met CRLF weigert de container de shebang uit te voeren.
 docker/entrypoint.sh text eol=lf
-docker/init-letsencrypt.sh text eol=lf
-docker/renew-cert.sh text eol=lf

@@ -11,20 +11,15 @@
 # gaat; zonder resolver kan nginx die naam dan niet opzoeken.
 resolver 127.0.0.11 ipv6=off valid=10s;
 
+# Poort 80 wordt door de provider geblokkeerd en is van buitenaf onbereikbaar.
+# Certbot gebruikt hem dan ook niet: die controleert via tls-alpn-01 over 443.
+# Dit blok is er alleen nog voor verkeer uit je eigen netwerk.
 server {
-    listen 80;
-    server_name ${DOMAIN};
-
-    # De enige reden dat poort 80 nog open staat: certbot zet hier zijn
-    # challenge neer en Let's Encrypt haalt hem op. Deze location staat voor
-    # de redirect, anders zou de challenge zelf ook naar https gestuurd
-    # worden en mislukt elke verlenging.
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
+    listen 80 default_server;
+    server_name _;
 
     location / {
-        return 301 https://$host$request_uri;
+        return 301 https://${DOMAIN}$request_uri;
     }
 }
 

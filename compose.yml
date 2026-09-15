@@ -6,6 +6,9 @@ services:
     image: nginx:1.27-alpine
     restart: unless-stopped
     ports:
+      # Poort 80 wordt door de provider geblokkeerd en is van buiten dus
+      # onbereikbaar. Hij blijft staan voor het bereiken van de site binnen je
+      # eigen netwerk en via de 8080-regel in de router.
       - "80:80"
       - "443:443"
     env_file: .env.proxy
@@ -16,29 +19,19 @@ services:
     volumes:
       - ./docker/proxy.conf.template:/etc/nginx/templates/default.conf.template:ro
       - certbot-conf:/etc/letsencrypt:ro
-      - certbot-webroot:/var/www/certbot:ro
-    # Elke zes uur herladen, zodat een vernieuwd certificaat vanzelf in gebruik
-    # genomen wordt. Een reload verbreekt geen lopende verbindingen.
-    command:
-      - sh
-      - -c
-      - 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & exec nginx -g "daemon off;"'
     depends_on:
       - app
 
-  # Vraagt het certificaat aan en verlengt het. Serveert zelf geen verkeer.
+  # Draait niet mee met `docker compose up`: het profiel zorgt dat deze service
+  # alleen opstart als je hem expliciet aanroept met `docker compose run`.
+  # Verlengen gebeurt via docker/renew-cert.sh op een cronjob, niet vanuit een
+  # container die eeuwig staat te wachten.
   certbot:
     image: certbot/certbot:latest
-    restart: unless-stopped
+    profiles:
+      - cert
     volumes:
       - certbot-conf:/etc/letsencrypt
-      - certbot-webroot:/var/www/certbot
-    # Twee keer per dag proberen. Certbot doet niets zolang het certificaat nog
-    # meer dan dertig dagen geldig is, dus dit is goedkoper dan het klinkt.
-    entrypoint:
-      - sh
-      - -c
-      - 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done'
 
   app:
     build: .
@@ -58,4 +51,3 @@ services:
 volumes:
   vakantie-db:
   certbot-conf:
-  certbot-webroot:

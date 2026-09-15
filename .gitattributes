@@ -14,3 +14,4 @@ CHANGELOG.md export-ignore
 # voeren.
 docker/entrypoint.sh text eol=lf
 docker/init-letsencrypt.sh text eol=lf
+docker/renew-cert.sh text eol=lf

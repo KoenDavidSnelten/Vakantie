@@ -1,0 +1,82 @@
+# Reverse proxy voor de app-container. Deze nginx doet alleen TLS en
+# doorsturen; het uitserveren van Laravel gebeurt in de nginx die al in het
+# app-image zit (docker/nginx.conf).
+#
+# Dit is een template: het officiele nginx-image vult ${DOMAIN} in bij het
+# opstarten en schrijft het resultaat naar conf.d/default.conf. Alleen DOMAIN
+# wordt vervangen -- $host en $scheme hieronder blijven gewone
+# nginx-variabelen.
+
+# Docker's interne DNS. Nodig omdat de upstream verderop via een variabele
+# gaat; zonder resolver kan nginx die naam dan niet opzoeken.
+resolver 127.0.0.11 ipv6=off valid=10s;
+
+server {
+    listen 80;
+    server_name ${DOMAIN};
+
+    # De enige reden dat poort 80 nog open staat: certbot zet hier zijn
+    # challenge neer en Let's Encrypt haalt hem op. Deze location staat voor
+    # de redirect, anders zou de challenge zelf ook naar https gestuurd
+    # worden en mislukt elke verlenging.
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${DOMAIN};
+
+    ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+
+    ssl_protocols             TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_ciphers               ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_session_cache         shared:SSL:10m;
+    ssl_session_timeout       1d;
+    ssl_session_tickets       off;
+
+    # Pas aanzetten als https een tijd stabiel draait. Browsers onthouden deze
+    # header, dus zolang hij geldig is kun je niet meer terugvallen op http --
+    # ook niet als er iets mis is met je certificaat.
+    # add_header Strict-Transport-Security "max-age=15552000" always;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+    server_tokens off;
+
+    # Gelijk aan de waarde in docker/nginx.conf: een kleinere limiet hier zou
+    # de app-container nooit bereiken.
+    client_max_body_size 2m;
+
+    access_log /dev/stdout;
+    error_log  /dev/stderr warn;
+
+    location / {
+        # Via een variabele, zodat nginx de naam telkens opnieuw opzoekt in
+        # plaats van het IP van de app-container voor altijd te onthouden. Na
+        # een `docker compose up -d --build app` krijgt die een nieuw IP; met
+        # een vaste upstream zou de proxy tot een reload 502's geven.
+        set $upstream app;
+        proxy_pass http://$upstream:80;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_set_header X-Forwarded-Port  $server_port;
+
+        # Gelijk aan fastcgi_read_timeout in docker/nginx.conf.
+        proxy_read_timeout 60s;
+    }
+}

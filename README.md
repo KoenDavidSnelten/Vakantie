@@ -37,13 +37,23 @@ composer test
 
 ## Draaien op een Raspberry Pi met Docker
 
-De app draait als één container: nginx en php-fpm samen, onder supervisord.
+Er draaien drie containers:
+
+| Container | Doet |
+| --- | --- |
+| `app` | de site zelf: nginx en php-fpm samen, onder supervisord |
+| `proxy` | handelt https af en zet alles door naar `app` |
+| `certbot` | haalt het certificaat op en verlengt het elke paar maanden |
+
+Alleen `proxy` hangt aan een poort van de Pi. De app is van buitenaf niet
+rechtstreeks te bereiken, ook niet vanaf je eigen netwerk.
+
 Het image wordt op de Pi zelf gebouwd, dus er is geen registry nodig en geen
 gedoe met architecturen.
 
-Er is precies één volume, met daarin het SQLite-bestand. Verder schrijft de
-app niets naar schijf: avatars worden uit de initialen gegenereerd en een
-pistekaart is een link, geen upload.
+Het SQLite-bestand staat in het volume `vakantie-db`. Verder schrijft de app
+niets naar schijf: avatars worden uit de initialen gegenereerd en een
+pistekaart is een link, geen upload. De certificaten staan in `certbot-conf`.
 
 ### Eenmalig instellen
 
@@ -70,7 +80,8 @@ pistekaart is een link, geen upload.
    cd /srv/vakantie
 
    cp .env.docker.example .env.docker
-   chmod 600 .env.docker
+   cp .env.proxy.example  .env.proxy
+   chmod 600 .env.docker .env.proxy
    ```
 
    Vul in `.env.docker` minstens in:
@@ -79,16 +90,50 @@ pistekaart is een link, geen upload.
      `docker compose run --rm --entrypoint php app artisan key:generate --show --no-ansi`
      (`--no-ansi` is nodig, anders zitten er kleurcodes in de sleutel)
    - `REGISTRATION_CODE` — zonder deze code kan iedereen die `/register` vindt een account maken
-   - `APP_URL` — het adres waarop je de site opent
+   - `APP_URL` — `https://` plus je domeinnaam
 
-5. **Starten:**
+   En in `.env.proxy`:
+
+   - `DOMAIN` — dezelfde domeinnaam, maar kaal: zonder `https://` en zonder slash
+   - `LETSENCRYPT_EMAIL` — hier komt de waarschuwing binnen als een verlenging mislukt
+
+5. **DNS:** maak bij je domeinregistrar een A-record dat je domeinnaam naar het
+   publieke IP van je aansluiting wijst. Controleer dat het klopt:
 
    ```bash
+   dig +short jouwdomein.nl     # moet gelijk zijn aan:
+   curl -s ifconfig.me
+   ```
+
+   Geven die twee verschillende antwoorden, wacht dan tot de DNS bijgewerkt is
+   (kan een uur duren). Blijft `curl ifconfig.me` afwijken van het IP op de
+   statuspagina van je router, dan zit je achter CGNAT en werkt dit hele
+   recept niet — dan is een Cloudflare Tunnel de weg.
+
+6. **Router:** geef de Pi een vast LAN-adres en zet poort **80 én 443** door
+   naar de Pi. Poort 80 moet open blijven: certbot verlengt het certificaat
+   daarover, en zonder die poort verloopt het na negentig dagen.
+
+7. **Starten en het certificaat ophalen:**
+
+   ```bash
+   ./docker/init-letsencrypt.sh --staging   # eerst met een testcertificaat
+   ```
+
+   Doe deze stap altijd eerst met `--staging`. Let's Encrypt staat maar vijf
+   mislukte aanvragen per uur toe, en de fouten die je op dit punt maakt — DNS
+   nog niet doorgekomen, poort 80 dicht — kosten je anders in één keer je
+   hele budget. De browser zal klagen over het certificaat, dat hoort.
+
+   Gaat het goed, dan het echte werk:
+
+   ```bash
+   ./docker/init-letsencrypt.sh
    docker compose up -d --build
    ```
 
-6. **Router:** geef de Pi een vast LAN-adres en zet poort 80 door als je de
-   site van buitenaf wil bereiken.
+   Vanaf nu verlengt de certbot-container vanzelf. Dit script draai je nooit
+   meer.
 
 ### Een wijziging uitrollen
 
@@ -172,26 +217,66 @@ sqlite3 vakantie-2026-09-14.sqlite "pragma integrity_check;"
 ### Handige commando's
 
 ```bash
-docker compose logs -f app                        # logs volgen
+docker compose logs -f app                        # logs van de app volgen
+docker compose logs -f proxy                      # verkeer dat binnenkomt
+docker compose logs certbot                       # verlengingen
 docker compose exec app php artisan tinker        # tinker in de container
 docker compose ps                                 # status en healthcheck
 ```
 
 ---
 
-## Later: HTTPS ervoor zetten
+## Over het certificaat
 
-Zet je de site echt op het internet, dan komt er een reverse proxy voor die
-TLS afhandelt. In `compose.yml` wordt `ports:` op de app dan `expose: 80`,
-en er komt een `caddy`-service bij die 80 en 443 pakt en doorzet naar
-`app:80`.
+Een certificaat van Let's Encrypt is negentig dagen geldig. De
+certbot-container probeert twee keer per dag te verlengen en doet niets
+zolang er nog meer dan dertig dagen over zijn. De proxy herlaadt zichzelf elke
+zes uur, zodat een vers certificaat vanzelf in gebruik genomen wordt. Er is
+dus geen cronjob en geen onderhoud.
 
-Twee dingen moeten tegelijk mee, anders wijst de site naar `http://` en
-breekt hij op mixed content:
+Controleren hoe lang je certificaat nog geldig is:
 
-- `bootstrap/app.php` krijgt `$middleware->trustProxies(at: '*')`
-- `.env.docker` krijgt `SESSION_SECURE_COOKIE=true` en `APP_URL=https://...`
+```bash
+docker compose run --rm --entrypoint certbot certbot certificates
+```
 
-Die middleware-regel hoort er pas in zodra er werkelijk een proxy voor staat.
-Op een container die zelf direct aan poort 80 hangt zou hij iedereen
-toestaan `X-Forwarded-For` te vervalsen.
+Een verlenging droogzwemmen zonder er een echte aanvraag aan te wagen:
+
+```bash
+docker compose run --rm --entrypoint certbot certbot renew --dry-run
+```
+
+### Als er iets misgaat
+
+**`Timeout during connect` bij het aanvragen.** Let's Encrypt kan poort 80 niet
+bereiken. Test vanaf een verbinding buiten je huis — mobiel internet met wifi
+uit — met `curl -I http://jouwdomein.nl`. Meestal is het de poortdoorverwijzing
+op de router, soms blokkeert de provider poort 80.
+
+**`unauthorized` of het verkeerde IP.** Het A-record wijst ergens anders heen.
+Vergelijk `dig +short jouwdomein.nl` met `curl -s ifconfig.me` op de Pi.
+
+**502 Bad Gateway.** De proxy draait, de app niet. Kijk met
+`docker compose ps` en `docker compose logs app`.
+
+**De site laadt zonder opmaak.** Dan wordt er `http://` in de HTML gezet en
+blokkeert de browser de stylesheets als mixed content. Controleer of
+`APP_URL` in `.env.docker` met `https://` begint en of `trustProxies` in
+[`bootstrap/app.php`](bootstrap/app.php) staat. Na een wijziging in
+`.env.docker` is `docker compose up -d --force-recreate app` nodig: de
+configuratie wordt bij het opstarten gecachet.
+
+**Je komt niet voorbij het inlogscherm.** `SESSION_SECURE_COOKIE=true` terwijl
+je de site over `http://` benadert. Gebruik `https://`.
+
+**Een tweede domeinnaam erbij, bijvoorbeeld `www`.** Zet hem achter
+`server_name` in [`docker/proxy.conf.template`](docker/proxy.conf.template) en
+vraag het certificaat opnieuw aan met een extra `-d www.jouwdomein.nl`.
+
+### Terug naar http, tijdelijk
+
+Draai je de app even zonder proxy, zet dan `SESSION_SECURE_COOKIE=false` in
+`.env.docker` en haal `trustProxies` weg. Die middleware-regel hoort er alleen
+in zolang er echt een proxy voor staat: op een container die zelf aan poort 80
+hangt zou hij iedereen toestaan `X-Forwarded-For` te vervalsen en zo zijn
+IP-adres te verbergen.

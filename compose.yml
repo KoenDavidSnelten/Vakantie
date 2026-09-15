@@ -1,10 +1,53 @@
 services:
+  # Handelt TLS af en zet alles door naar de app-container. Dit is de enige
+  # service die poorten op de Pi publiceert; de app is van buitenaf niet
+  # rechtstreeks te bereiken.
+  proxy:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file: .env.proxy
+    environment:
+      # Zonder dit filter zou het image ook andere omgevingsvariabelen in de
+      # template proberen in te vullen.
+      NGINX_ENVSUBST_FILTER: "^DOMAIN$$"
+    volumes:
+      - ./docker/proxy.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - certbot-conf:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
+    # Elke zes uur herladen, zodat een vernieuwd certificaat vanzelf in gebruik
+    # genomen wordt. Een reload verbreekt geen lopende verbindingen.
+    command:
+      - sh
+      - -c
+      - 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & exec nginx -g "daemon off;"'
+    depends_on:
+      - app
+
+  # Vraagt het certificaat aan en verlengt het. Serveert zelf geen verkeer.
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - certbot-conf:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    # Twee keer per dag proberen. Certbot doet niets zolang het certificaat nog
+    # meer dan dertig dagen geldig is, dus dit is goedkoper dan het klinkt.
+    entrypoint:
+      - sh
+      - -c
+      - 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done'
+
   app:
     build: .
     image: vakantie:latest
     restart: unless-stopped
-    ports:
-      - "80:80"
+    # expose in plaats van ports: alleen bereikbaar vanaf de proxy, niet vanaf
+    # het netwerk waar de Pi in hangt.
+    expose:
+      - "80"
     env_file: .env.docker
     volumes:
       # Het enige dat de app nog bewaart: het SQLite-bestand. Een submap,
@@ -14,3 +57,5 @@ services:
 
 volumes:
   vakantie-db:
+  certbot-conf:
+  certbot-webroot:

@@ -8,7 +8,7 @@
 {$DOMAIN} {
 	tls {
 		issuer acme {
-			dir   {$ACME_CA}
+			dir {$ACME_CA}
 			email {$LETSENCRYPT_EMAIL}
 
 			# De gebruikelijke controle loopt over poort 80 en die blokkeert de

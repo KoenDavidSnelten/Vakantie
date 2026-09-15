@@ -14,6 +14,9 @@ services:
     env_file: .env.proxy
     volumes:
       - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      # De losse pagina op het kale domein. Alleen-lezen: Caddy hoeft er niets
+      # te schrijven, en zo kan een fout in de config er nooit iets slopen.
+      - ./site:/srv/site:ro
       # Hier staan de certificaten. Dit volume moet blijven bestaan, anders
       # vraagt Caddy bij elke herstart een nieuw certificaat aan en loop je
       # tegen de limiet van Let's Encrypt aan.

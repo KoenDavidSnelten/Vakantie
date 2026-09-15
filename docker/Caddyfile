@@ -1,11 +1,13 @@
-# Caddy doet twee dingen tegelijk: hij handelt https af en hij haalt het
-# certificaat op. Dat tweede kan hij zelf, zonder aparte container en zonder
+# Caddy doet twee dingen tegelijk: hij handelt https af en hij haalt de
+# certificaten op. Dat tweede kan hij zelf, zonder aparte container en zonder
 # cronjob, omdat hij de controle van Let's Encrypt afhandelt op de verbinding
 # die hij toch al openhoudt.
 #
 # De waarden tussen {$...} komen uit .env.proxy.
 
-{$DOMAIN} {
+# Alle drie de sites hieronder krijgen hun certificaat op dezelfde manier.
+# Een snippet scheelt het drie keer uitschrijven.
+(letsencrypt) {
 	tls {
 		issuer acme {
 			dir {$ACME_CA}
@@ -17,6 +19,11 @@
 			disable_http_challenge
 		}
 	}
+}
+
+# De vakantieplanner.
+{$DOMAIN} {
+	import letsencrypt
 
 	# De app comprimeert zelf niets; dat gebeurt hier.
 	encode gzip
@@ -30,4 +37,18 @@
 	request_body {
 		max_size 2MB
 	}
+}
+
+# Het kale domein: losse bestanden uit site/, geen Laravel.
+{$SITE_DOMAIN} {
+	import letsencrypt
+	encode gzip
+	root * /srv/site
+	file_server
+}
+
+# www stuurt door naar het kale domein, zodat er maar één adres in omloop is.
+www.{$SITE_DOMAIN} {
+	import letsencrypt
+	redir https://{$SITE_DOMAIN}{uri} permanent
 }

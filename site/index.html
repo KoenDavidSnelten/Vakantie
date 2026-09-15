@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3f4048">
+<meta name="description" content="Snake, op een handheld van vroeger.">
+<title>Snake — koensnelten.nl</title>
+<style>
+  /* Het scherm is 160 bij 144 pixels, precies zoals de handhelds waar dit
+     een knipoog naar is. Alles eromheen schaalt mee, de pixels blijven hard. */
+  :root {
+    --lcd-0: #9bbc0f;   /* lichtst, de achtergrond van het scherm */
+    --lcd-1: #8bac0f;
+    --lcd-2: #306230;
+    --lcd-3: #0f380f;   /* donkerst */
+
+    --shell:      #d8d3c8;
+    --shell-dark: #b9b2a4;
+    --bezel:      #3f4048;
+    --knop:       #8e3b62;
+    --knop-diep:  #6d2a4a;
+    --kruis:      #33343a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: #23242a;
+    color: var(--shell);
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    padding-block: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-bottom));
+    /* Geen tekstselectie of dubbeltik-zoom tijdens het spelen. */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+    overflow-x: hidden;
+  }
+
+  .kast {
+    width: 100%;
+    max-width: 360px;
+    background: linear-gradient(160deg, var(--shell), var(--shell-dark));
+    border-radius: 14px 14px 46px 14px;
+    padding: 16px 16px 20px;
+    box-shadow:
+      0 1px 0 #efeae0 inset,
+      0 -3px 0 rgba(0,0,0,.18) inset,
+      0 18px 40px rgba(0,0,0,.45);
+  }
+
+  .bezel {
+    background: var(--bezel);
+    border-radius: 10px 10px 30px 10px;
+    padding: 14px 16px 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.4) inset;
+  }
+
+  .scherm {
+    position: relative;
+    background: var(--lcd-0);
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: 0 0 0 2px #2a2b31, 0 2px 8px rgba(0,0,0,.5) inset;
+  }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 7px 3px;
+    font-size: 11px;
+    letter-spacing: .08em;
+    color: var(--lcd-3);
+    background: var(--lcd-1);
+  }
+  .hud b { font-weight: 700; }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 160 / 144;
+    /* Zonder dit maakt de browser er een wazige uitvergroting van. */
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .melding {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+    padding: 12px;
+    background: color-mix(in srgb, var(--lcd-0) 88%, transparent);
+    color: var(--lcd-3);
+  }
+  .melding[hidden] { display: none; }
+  .melding h1 { margin: 0; font-size: 20px; letter-spacing: .14em; }
+  .melding p  { margin: 0; font-size: 11px; line-height: 1.6; letter-spacing: .04em; }
+  .knipper { animation: knipper 1.1s steps(2, end) infinite; }
+  @keyframes knipper { 50% { opacity: 0; } }
+
+  .merk {
+    margin: 8px 2px 0;
+    font-size: 8px;
+    letter-spacing: .22em;
+    color: #9b9ca6;
+    text-align: center;
+  }
+
+  .bediening {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 22px;
+  }
+
+  /* Het stuurkruis: een 3x3-raster waarvan alleen de armen zichtbaar zijn. */
+  .kruis {
+    display: grid;
+    grid-template: repeat(3, 34px) / repeat(3, 34px);
+    flex: none;
+  }
+  .kruis button {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: var(--kruis);
+    color: #8a8b93;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    touch-action: none;
+    box-shadow: 0 2px 0 #1d1e22;
+  }
+  .kruis button:active { background: #45464d; box-shadow: none; transform: translateY(2px); }
+  .kruis .op    { grid-area: 1 / 2; border-radius: 6px 6px 0 0; }
+  .kruis .links { grid-area: 2 / 1; border-radius: 6px 0 0 6px; }
+  .kruis .mid   { grid-area: 2 / 2; background: var(--kruis); box-shadow: none; }
+  .kruis .rechts{ grid-area: 2 / 3; border-radius: 0 6px 6px 0; }
+  .kruis .neer  { grid-area: 3 / 2; border-radius: 0 0 6px 6px; }
+  .kruis .mid::after {
+    content: "";
+    display: block;
+    width: 12px; height: 12px;
+    margin: 11px auto;
+    border-radius: 50%;
+    background: #2a2b30;
+  }
+
+  .knoppen { display: flex; gap: 14px; transform: rotate(-18deg); }
+  .rond {
+    width: 50px; height: 50px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--knop);
+    color: #f0dbe6;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    cursor: pointer;
+    touch-action: none;
+    box-shadow: 0 3px 0 var(--knop-diep);
+  }
+  .rond:active { box-shadow: none; transform: translateY(3px); }
+
+  .start {
+    display: block;
+    margin: 20px auto 0;
+    padding: 7px 20px;
+    border: 0;
+    border-radius: 20px;
+    background: #8d8879;
+    color: #33343a;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .16em;
+    cursor: pointer;
+    touch-action: none;
+    box-shadow: 0 2px 0 #6e6a5e;
+  }
+  .start:active { box-shadow: none; transform: translateY(2px); }
+
+  button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+  /* Op een breed scherm is het stuurkruis overbodig; de pijltjestoetsen doen
+     hetzelfde. Hij blijft staan, maar de hint verandert. */
+  .toets-hint { display: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .toets-hint { display: block; }
+    .tik-hint   { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="kast">
+  <div class="bezel">
+    <div class="scherm">
+      <div class="hud">
+        <span>SCORE <b id="score">0</b></span>
+        <span>BESTE <b id="beste">0</b></span>
+      </div>
+      <canvas id="spel" width="160" height="144"></canvas>
+      <div class="melding" id="melding">
+        <h1>SNAKE</h1>
+        <p class="tik-hint">Veeg over het scherm<br>of gebruik het stuurkruis</p>
+        <p class="toets-hint">Pijltjestoetsen of WASD<br>spatie pauzeert</p>
+        <p class="knipper">— DRUK OP START —</p>
+      </div>
+    </div>
+    <p class="merk">KOENSNELTEN.NL</p>
+  </div>
+
+  <div class="bediening">
+    <div class="kruis">
+      <button class="op"     data-richting="op"     aria-label="Omhoog">▲</button>
+      <button class="links"  data-richting="links"  aria-label="Naar links">◀</button>
+      <span   class="mid"    aria-hidden="true"></span>
+      <button class="rechts" data-richting="rechts" aria-label="Naar rechts">▶</button>
+      <button class="neer"   data-richting="neer"   aria-label="Omlaag">▼</button>
+    </div>
+    <div class="knoppen">
+      <button class="rond" id="knopB">B</button>
+      <button class="rond" id="knopA">A</button>
+    </div>
+  </div>
+
+  <button class="start" id="knopStart">START</button>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const CEL = 8, KOLOMMEN = 20, RIJEN = 18;   // 20x8 = 160, 18x8 = 144
+  const START_TEMPO = 150;                    // milliseconden per stap
+  const MIN_TEMPO   = 70;
+  const VERSNELLING = 4;                      // sneller per gegeten appel
+
+  const KLEUR = { achtergrond: "#9bbc0f", raster: "#8bac0f", body: "#306230", kop: "#0f380f", eten: "#0f380f" };
+
+  const canvas  = document.getElementById("spel");
+  const ctx     = canvas.getContext("2d");
+  const elScore = document.getElementById("score");
+  const elBeste = document.getElementById("beste");
+  const elMelding = document.getElementById("melding");
+
+  let slang, richting, volgende, eten, score, tempo, toestand, laatsteStap;
+
+  // localStorage kan gooien in een privévenster of met geblokkeerde site-data.
+  const beste = {
+    lees() { try { return parseInt(localStorage.getItem("snake-beste") || "0", 10) || 0; } catch { return 0; } },
+    schrijf(v) { try { localStorage.setItem("snake-beste", String(v)); } catch { /* niet erg */ } }
+  };
+
+  function begin() {
+    slang = [{ x: 9, y: 9 }, { x: 8, y: 9 }, { x: 7, y: 9 }];
+    richting = volgende = { x: 1, y: 0 };
+    score = 0;
+    tempo = START_TEMPO;
+    legEten();
+    toestand = "speelt";
+    laatsteStap = performance.now();
+    toonMelding(null);
+    werkHudBij();
+  }
+
+  function legEten() {
+    // Net zo lang prikken tot er een vakje vrij is. Bij een volgespeeld bord
+    // zou dat eeuwig duren, dus dat vangen we apart af.
+    if (slang.length >= KOLOMMEN * RIJEN) { eten = null; return; }
+    let p;
+    do {
+      p = { x: (Math.random() * KOLOMMEN) | 0, y: (Math.random() * RIJEN) | 0 };
+    } while (slang.some(s => s.x === p.x && s.y === p.y));
+    eten = p;
+  }
+
+  function stap() {
+    richting = volgende;
+    const kop = { x: slang[0].x + richting.x, y: slang[0].y + richting.y };
+
+    const tegenMuur = kop.x < 0 || kop.y < 0 || kop.x >= KOLOMMEN || kop.y >= RIJEN;
+    // De staartpunt schuift deze stap weg, dus daar mag je wel op landen.
+    const tegenZichzelf = slang.slice(0, -1).some(s => s.x === kop.x && s.y === kop.y);
+    if (tegenMuur || tegenZichzelf) return afgelopen();
+
+    slang.unshift(kop);
+
+    if (eten && kop.x === eten.x && kop.y === eten.y) {
+      score++;
+      tempo = Math.max(MIN_TEMPO, tempo - VERSNELLING);
+      legEten();
+      werkHudBij();
+    } else {
+      slang.pop();
+    }
+  }
+
+  function afgelopen() {
+    toestand = "einde";
+    if (score > beste.lees()) { beste.schrijf(score); werkHudBij(); }
+    toonMelding(`<h1>EINDE</h1>
+      <p>Score ${score} &nbsp;·&nbsp; Beste ${beste.lees()}</p>
+      <p class="knipper">— DRUK OP START —</p>`);
+  }
+
+  function werkHudBij() {
+    elScore.textContent = score ?? 0;
+    elBeste.textContent = beste.lees();
+  }
+
+  function toonMelding(html) {
+    if (html === null) { elMelding.hidden = true; return; }
+    elMelding.innerHTML = html;
+    elMelding.hidden = false;
+  }
+
+  function teken() {
+    ctx.fillStyle = KLEUR.achtergrond;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Flauw rasterpatroon, zoals de matrix van een oud lcd.
+    ctx.fillStyle = KLEUR.raster;
+    for (let y = 0; y < RIJEN; y++) {
+      for (let x = (y % 2); x < KOLOMMEN; x += 2) ctx.fillRect(x * CEL, y * CEL, CEL, CEL);
+    }
+
+    if (eten) {
+      ctx.fillStyle = KLEUR.eten;
+      ctx.fillRect(eten.x * CEL + 2, eten.y * CEL + 2, CEL - 4, CEL - 4);
+      ctx.fillRect(eten.x * CEL + 3, eten.y * CEL,     CEL - 6, 2);
+    }
+
+    slang.forEach((s, i) => {
+      ctx.fillStyle = i === 0 ? KLEUR.kop : KLEUR.body;
+      ctx.fillRect(s.x * CEL, s.y * CEL, CEL - 1, CEL - 1);
+    });
+  }
+
+  function lus(nu) {
+    requestAnimationFrame(lus);
+    if (toestand !== "speelt") return;
+    if (nu - laatsteStap < tempo) return;
+    laatsteStap = nu;
+    stap();
+    teken();
+  }
+
+  function stuur(naam) {
+    const kaart = { op: { x: 0, y: -1 }, neer: { x: 0, y: 1 }, links: { x: -1, y: 0 }, rechts: { x: 1, y: 0 } };
+    const d = kaart[naam];
+    if (!d || toestand !== "speelt") return;
+    // Niet in jezelf terug kunnen keren. Vergelijk met `richting` en niet met
+    // `volgende`, anders kun je met twee snelle tikken alsnog omkeren.
+    if (d.x === -richting.x && d.y === -richting.y) return;
+    volgende = d;
+  }
+
+  function startKnop() {
+    if (toestand === "speelt") { toestand = "pauze"; toonMelding('<h1>PAUZE</h1><p class="knipper">— DRUK OP START —</p>'); }
+    else if (toestand === "pauze") { toestand = "speelt"; laatsteStap = performance.now(); toonMelding(null); }
+    else begin();
+  }
+
+  // --- besturing -----------------------------------------------------------
+
+  document.querySelectorAll("[data-richting]").forEach(knop => {
+    const aan = e => { e.preventDefault(); stuur(knop.dataset.richting); };
+    knop.addEventListener("pointerdown", aan);
+  });
+
+  document.getElementById("knopStart").addEventListener("click", startKnop);
+  document.getElementById("knopA").addEventListener("click", startKnop);
+  document.getElementById("knopB").addEventListener("click", () => { if (toestand !== "speelt") begin(); });
+
+  addEventListener("keydown", e => {
+    const kaart = {
+      ArrowUp: "op", ArrowDown: "neer", ArrowLeft: "links", ArrowRight: "rechts",
+      w: "op", s: "neer", a: "links", d: "rechts",
+      W: "op", S: "neer", A: "links", D: "rechts"
+    };
+    if (kaart[e.key]) { e.preventDefault(); stuur(kaart[e.key]); }
+    else if (e.key === " " || e.key === "Enter") { e.preventDefault(); startKnop(); }
+  });
+
+  // Vegen over het scherm. De grootste van de twee richtingen wint, zodat een
+  // schuine veeg niet allebei de assen tegelijk probeert.
+  let veegStart = null;
+  canvas.addEventListener("pointerdown", e => { veegStart = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener("pointerup", e => {
+    if (!veegStart) return;
+    const dx = e.clientX - veegStart.x, dy = e.clientY - veegStart.y;
+    veegStart = null;
+    if (Math.hypot(dx, dy) < 24) { if (toestand !== "speelt") startKnop(); return; }
+    stuur(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "rechts" : "links") : (dy > 0 ? "neer" : "op"));
+  });
+
+  // Wegklikken naar een andere tab zet het spel stil in plaats van je te laten
+  // doorrijden terwijl je niet kijkt.
+  addEventListener("visibilitychange", () => {
+    if (document.hidden && toestand === "speelt") startKnop();
+  });
+
+  // --- opstarten -----------------------------------------------------------
+
+  slang = [{ x: 9, y: 9 }, { x: 8, y: 9 }, { x: 7, y: 9 }];
+  richting = volgende = { x: 1, y: 0 };
+  score = 0;
+  eten = { x: 14, y: 9 };
+  toestand = "wacht";
+  werkHudBij();
+  teken();
+  requestAnimationFrame(lus);
+})();
+</script>
+
+</body>
+</html>

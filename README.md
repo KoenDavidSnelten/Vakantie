@@ -42,10 +42,22 @@ Er draaien twee containers:
 | Container | Doet |
 | --- | --- |
 | `app` | de site zelf: nginx en php-fpm samen, onder supervisord |
-| `caddy` | handelt https af, haalt het certificaat op en zet alles door naar `app` |
+| `caddy` | handelt https af, haalt de certificaten op en zet alles door naar `app` |
 
 Alleen `caddy` hangt aan een poort van de Pi. De app is van buitenaf niet
 rechtstreeks te bereiken, ook niet vanaf je eigen netwerk.
+
+Caddy bedient drie namen, ingesteld in `.env.proxy`:
+
+| Adres | Wat er staat |
+| --- | --- |
+| `DOMAIN` | de vakantieplanner, doorgezet naar de `app`-container |
+| `SITE_DOMAIN` | de losse pagina uit [`site/`](site/) — statische bestanden, geen Laravel |
+| `www.SITE_DOMAIN` | stuurt door naar `SITE_DOMAIN` |
+
+De map `site/` hangt als volume in de container en zit niet in een image
+gebakken. Een `git pull` is dus genoeg om die pagina bij te werken — geen
+`--build`, geen herstart.
 
 **Over poort 80.** De provider blokkeert inkomend verkeer op poort 80. De
 gebruikelijke manier om een certificaat op te halen (http-01) loopt daarover en

@@ -31,6 +31,11 @@ class NewPasswordController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Emails are stored lowercase and SQLite compares case-sensitively.
+        if (is_string($request->input('email'))) {
+            $request->merge(['email' => Str::lower($request->input('email'))]);
+        }
+
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],

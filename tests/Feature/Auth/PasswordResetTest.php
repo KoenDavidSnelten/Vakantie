@@ -30,6 +30,29 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTo($user, ResetPassword::class);
     }
 
+    public function test_email_is_case_insensitive_on_password_reset(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['email' => 'lisa@example.com']);
+
+        $this->post('/forgot-password', ['email' => 'Lisa@Example.com'])
+            ->assertSessionHasNoErrors();
+
+        Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
+            $this->post('/reset-password', [
+                'token' => $notification->token,
+                'email' => 'LISA@example.com',
+                'password' => 'Str0ng-P@ssw0rd!',
+                'password_confirmation' => 'Str0ng-P@ssw0rd!',
+            ])
+                ->assertSessionHasNoErrors()
+                ->assertRedirect(route('login'));
+
+            return true;
+        });
+    }
+
     public function test_reset_password_screen_can_be_rendered(): void
     {
         Notification::fake();
